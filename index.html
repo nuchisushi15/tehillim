@@ -594,10 +594,25 @@
             }
 
             async sendCampaignCreatedEmail(campaign) {
-                console.log('Sending campaign created email...');
+                console.log('=== SENDING CAMPAIGN CREATED EMAIL ===');
+                console.log('Campaign:', JSON.stringify(campaign, null, 2));
+                console.log('Email config:', JSON.stringify(this.emailConfig, null, 2));
                 
-                if (typeof emailjs === 'undefined' || !this.emailConfig || !this.emailConfig.campaignCreatedTemplateId) {
-                    console.log('EmailJS or campaign template not configured');
+                if (typeof emailjs === 'undefined') {
+                    console.error('❌ EmailJS library not loaded');
+                    alert('EmailJS לא נטען');
+                    return;
+                }
+                
+                if (!this.emailConfig) {
+                    console.error('❌ No email config');
+                    alert('אין הגדרות מייל');
+                    return;
+                }
+                
+                if (!this.emailConfig.campaignCreatedTemplateId) {
+                    console.error('❌ No campaign template ID');
+                    alert('אין מזהה תבנית לקמפיין');
                     return;
                 }
 
@@ -613,17 +628,34 @@
                     subject: `קמפיין תהילים נוצר - ${campaign.name}`
                 };
 
+                console.log('📧 Template params:', JSON.stringify(templateParams, null, 2));
+                console.log('📨 Sending to service:', this.emailConfig.serviceId);
+                console.log('📄 Using template:', this.emailConfig.campaignCreatedTemplateId);
+
                 try {
-                    await emailjs.send(
+                    console.log('🚀 Starting email send...');
+                    const result = await emailjs.send(
                         this.emailConfig.serviceId,
                         this.emailConfig.campaignCreatedTemplateId,
                         templateParams
                     );
-                    console.log('Campaign creation email sent');
+                    console.log('✅ Email sent successfully!', result);
                     alert('קמפיין נוצר בהצלחה! נשלח מייל עם הקישור');
                 } catch (error) {
-                    console.error('Campaign email failed:', error);
-                    alert('הקמפיין נוצר אך המייל לא נשלח: ' + (error.text || error.message));
+                    console.error('❌ Email send failed:', error);
+                    console.error('Error details:', JSON.stringify(error, null, 2));
+                    
+                    // Try to give more specific error info
+                    let errorMessage = 'שגיאה לא ידועה';
+                    if (error.text) {
+                        errorMessage = error.text;
+                    } else if (error.message) {
+                        errorMessage = error.message;
+                    } else if (typeof error === 'string') {
+                        errorMessage = error;
+                    }
+                    
+                    alert('הקמפיין נוצר אך המייל לא נשלח. שגיאה: ' + errorMessage);
                 }
             }
 
@@ -1000,7 +1032,50 @@
             window.tehillimPlatform.initEmailJS();
             
             document.getElementById('emailSetup').style.display = 'none';
-            alert('הגדרות המייל נשמרו בהצלחה! המערכת מוכנה לשימוש.');
+            
+            // Test email immediately after saving config
+            setTimeout(() => {
+                testEmailConnection();
+            }, 1000);
+        }
+
+        async function testEmailConnection() {
+            console.log('=== TESTING EMAIL CONNECTION ===');
+            
+            if (!window.tehillimPlatform.emailConfig) {
+                console.error('No email config for testing');
+                return;
+            }
+            
+            const testEmail = prompt('הכנס כתובת מייל לבדיקה:', 'test@example.com');
+            if (!testEmail) return;
+            
+            const testParams = {
+                to_email: testEmail,
+                to_name: 'Test User',
+                from_name: "פלטפורמת תהילים - Test",
+                campaign_name: 'Test Campaign',
+                campaign_url: 'https://example.com/test',
+                message: 'This is a test email to verify EmailJS configuration.',
+                subject: 'Test Email - Tehillim Platform'
+            };
+            
+            console.log('Test params:', JSON.stringify(testParams, null, 2));
+            
+            try {
+                console.log('🚀 Sending test email...');
+                const result = await emailjs.send(
+                    window.tehillimPlatform.emailConfig.serviceId,
+                    window.tehillimPlatform.emailConfig.campaignCreatedTemplateId,
+                    testParams
+                );
+                console.log('✅ Test email sent successfully:', result);
+                alert('בדיקת המייל הצליחה! בדוק את תיבת הדואר.');
+            } catch (error) {
+                console.error('❌ Test email failed:', error);
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                alert('בדיקת המייל נכשלה: ' + (error.text || error.message));
+            }
         }
 
         function hideEmailSetup() {
