@@ -584,16 +584,12 @@
                 const campaignUrl = `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`;
                 
                 const templateParams = {
-                    to_name: campaign.organizer,
-                    to_email: campaign.organizerEmail,
+                    user_name: campaign.organizer,
+                    user_email: campaign.organizerEmail,
                     from_name: "פלטפורמת תהילים",
-                    reply_to: campaign.organizerEmail,
                     campaign_name: campaign.name,
                     campaign_url: campaignUrl,
-                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`,
-                    chapter_number: '',
-                    user_name: '',
-                    chapter_text: ''
+                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`
                 };
 
                 console.log('Email template params:', JSON.stringify(templateParams, null, 2));
@@ -614,14 +610,15 @@
             }
 
             async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail) {
-                if (!this.emailConfig) return;
+                if (typeof emailjs === 'undefined' || !this.emailConfig) return;
 
                 const templateParams = {
-                    to_name: campaign.organizer,
-                    to_email: campaign.organizerEmail,
+                    user_name: campaign.organizer,
+                    user_email: campaign.organizerEmail,
+                    from_name: "פלטפורמת תהילים",
                     campaign_name: campaign.name,
                     chapter_number: chapterNum,
-                    user_name: userName,
+                    participant_name: userName,
                     message: `${userName} לקח על עצמו לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"`
                 };
 
@@ -638,8 +635,9 @@
                 // Send chapter text to user
                 if (userEmail) {
                     const userParams = {
-                        to_name: userName,
-                        to_email: userEmail,
+                        user_name: userName,
+                        user_email: userEmail,
+                        from_name: "פלטפורמת תהילים",
                         campaign_name: campaign.name,
                         chapter_number: chapterNum,
                         chapter_text: this.tehillimTexts[chapterNum],
