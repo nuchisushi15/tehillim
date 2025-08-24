@@ -462,8 +462,18 @@
             }
 
             initEmailJS() {
-                if (this.emailConfig) {
-                    emailjs.init(this.emailConfig.userId);
+                console.log('Initializing EmailJS...');
+                console.log('Email config:', this.emailConfig);
+                
+                if (this.emailConfig && this.emailConfig.userId) {
+                    try {
+                        emailjs.init(this.emailConfig.userId);
+                        console.log('EmailJS initialized successfully with user ID:', this.emailConfig.userId);
+                    } catch (error) {
+                        console.error('EmailJS initialization failed:', error);
+                    }
+                } else {
+                    console.error('No email config or user ID found');
                 }
             }
 
@@ -483,10 +493,19 @@
             }
 
             createCampaign() {
+                console.log('Creating campaign...');
+                
                 const name = document.getElementById('campaignName').value;
                 const description = document.getElementById('campaignDescription').value;
                 const organizer = document.getElementById('organizerName').value;
                 const organizerEmail = document.getElementById('organizerEmail').value;
+
+                console.log('Campaign data:', { name, organizer, organizerEmail });
+
+                if (!name || !organizer || !organizerEmail) {
+                    alert('יש למלא את כל השדות הנדרשים');
+                    return;
+                }
 
                 const campaignId = this.generateId();
                 const campaign = {
@@ -499,20 +518,40 @@
                     chapters: this.initializeChapters()
                 };
 
-                // Save to localStorage
-                const campaigns = this.getCampaigns();
-                campaigns[campaignId] = campaign;
-                localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
+                console.log('Generated campaign:', campaign);
 
-                // Send email to organizer
-                this.sendCampaignCreatedEmail(campaign);
+                try {
+                    // Save to localStorage
+                    const campaigns = this.getCampaigns();
+                    campaigns[campaignId] = campaign;
+                    localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
+                    console.log('Campaign saved to localStorage');
 
-                // Show URL
-                this.showCampaignUrl(campaignId);
+                    // Send email to organizer
+                    this.sendCampaignCreatedEmail(campaign);
+
+                    // Show URL
+                    this.showCampaignUrl(campaignId);
+                    
+                    // Clear form
+                    document.getElementById('campaignForm').reset();
+                    
+                    console.log('Campaign creation completed');
+                } catch (error) {
+                    console.error('Error creating campaign:', error);
+                    alert('שגיאה ביצירת הקמפיין: ' + error.message);
+                }
             }
 
             async sendCampaignCreatedEmail(campaign) {
-                if (!this.emailConfig) return;
+                console.log('Attempting to send campaign creation email...');
+                console.log('Email config:', this.emailConfig);
+                
+                if (!this.emailConfig) {
+                    console.error('No email config found');
+                    alert('אין הגדרות מייל - המייל לא נשלח');
+                    return;
+                }
 
                 const campaignUrl = `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`;
                 
@@ -521,18 +560,26 @@
                     to_email: campaign.organizerEmail,
                     campaign_name: campaign.name,
                     campaign_url: campaignUrl,
-                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`
+                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`,
+                    chapter_number: '',
+                    user_name: '',
+                    chapter_text: ''
                 };
 
+                console.log('Email template params:', templateParams);
+
                 try {
-                    await emailjs.send(
+                    console.log('Sending email with EmailJS...');
+                    const result = await emailjs.send(
                         this.emailConfig.serviceId,
                         this.emailConfig.templateId,
                         templateParams
                     );
-                    console.log('Campaign creation email sent');
+                    console.log('Campaign creation email sent successfully:', result);
+                    alert('קמפיין נוצר בהצלחה! נשלח מייל עם הקישור');
                 } catch (error) {
                     console.error('Email send failed:', error);
+                    alert('הקמפיין נוצר אך המייל לא נשלח. שגיאה: ' + error.text);
                 }
             }
 
@@ -795,10 +842,15 @@
             }
 
             displayExistingCampaigns() {
+                console.log('Displaying existing campaigns...');
                 const campaigns = this.getCampaigns();
+                console.log('Found campaigns:', campaigns);
+                
                 const listDiv = document.getElementById('campaignsList');
                 
                 const campaignIds = Object.keys(campaigns);
+                console.log('Campaign IDs:', campaignIds);
+                
                 if (campaignIds.length === 0) {
                     listDiv.innerHTML = '<p>אין קמפיינים קיימים</p>';
                     return;
@@ -819,6 +871,8 @@
                     `;
                     listDiv.appendChild(item);
                 });
+                
+                console.log('Existing campaigns displayed');
             }
 
             showCreateForm() {
