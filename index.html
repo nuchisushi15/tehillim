@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>פלטפורמת תהילים — עיצוב מעודכן</title>
+  <title>פלטפורמת תהילים — קמפיינים</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
   <style>
@@ -64,8 +64,7 @@
       margin:0 auto;
       padding:14px 20px;
       display:flex;
-      align-items:center;
-      gap:16px;
+      align-items:center; gap:16px;
     }
     .brand{display:flex; align-items:center; gap:12px; font-weight:800; color:var(--brand)}
     .brand .logo{width:36px; height:36px; border-radius:10px; background: conic-gradient(from 220deg, var(--brand), var(--brand-2)); box-shadow:0 8px 18px var(--ring)}
@@ -137,7 +136,7 @@
   <!-- Toast container -->
   <div id="toasts" class="toasts" aria-live="polite"></div>
 
-  <!-- Confirm modal (reusable) -->
+  <!-- Confirm modal -->
   <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div class="backdrop" onclick="closeConfirm()"></div>
     <div class="dialog">
@@ -163,8 +162,8 @@
       </header>
       <div id="chapterContent" class="content" style="white-space:pre-wrap; line-height:2; font-size:18px"></div>
       <div class="actions">
-        <button class="btn light" id="viewChapterBtn">צפה בפרק</button>
-        <button class="btn success" id="finishChapterBtn">סיימתי</button>
+        <!-- simplified: only a single finish button when relevant -->
+        <button class="btn success" id="finishChapterBtn" style="display:none">סיימתי</button>
         <button class="btn ghost" onclick="closeChapterModal()">סגור</button>
       </div>
     </div>
@@ -222,8 +221,7 @@
       <div class="hero">
         <h2>קמפיין תהילים</h2>
         <div class="info-banner">
-          <b>איך זה עובד?</b> יוצרים קמפיין, משתפים את הקישור, כל משתתף לוקח פרק (מסומן באותיות א-ת),
-          מקבל את הטקסט במייל ומסמן השלמה בסיום.
+          <b>איך זה עובד?</b> יוצרים קמפיין, משתפים את הקישור, לוחצים על פרק: אם הוא פנוי — הוא נתפס מיד, הטקסט נפתח, ובסוף מסמנים “סיימתי”.
         </div>
       </div>
 
@@ -312,7 +310,7 @@
       else if (num === 16){ result += 'טז'; num = 0; }
       else{ [90,80,70,60,50,40,30,20,10].forEach(t=>{ while(num>=t){ result += H_TENS[t]; num -= t; } }); }
       if (num>0) result += H_UNITS[num] || '';
-      if (!punctuation) return result;                   // chapters: no ׳/״
+      if (!punctuation) return result;                   // chapter buttons: no ׳/״
       if (result.length >= 2){ return result.slice(0,-1) + '״' + result.slice(-1); }
       if (result.length === 1){ return result + '׳'; }
       return result;
@@ -324,7 +322,7 @@
         this.currentCampaignId = null;
         this.currentChapterNum = null;
         this.emailConfig = null;
-        this.tehillimTexts = this.getTehillimTexts(); // placeholders (replaced by Sefaria on demand)
+        this.tehillimTexts = this.getTehillimTexts(); // placeholders (Sefaria replaces on demand)
         this.init();
       }
 
@@ -474,66 +472,77 @@
         document.getElementById('progressFill').style.width = `${pct}%`;
       }
 
+      /* --------- SIMPLIFIED CLICK FLOW --------- */
       async handleChapterClick(chapterNum){
-        const name = document.getElementById('participantName').value.trim();
-        const email = document.getElementById('participantEmail').value.trim();
-
         const campaigns = this.getCampaigns();
         const c = campaigns[this.currentCampaignId];
         const chapter = c.chapters[chapterNum];
 
-        // If available → attempt to take (requires name+email)
+        // If available → take immediately (requires name+email once)
         if (chapter.status === 'available'){
-          if (!name){ showToast('נא להזין שם', 'error'); return; }
-          if (!email){ showToast('נא להזין דוא״ל', 'error'); return; }
+          const name = document.getElementById('participantName').value.trim();
+          const email = document.getElementById('participantEmail').value.trim();
+          if (!name || !email){ showToast('נא להזין שם ודוא״ל לפני בחירת פרק', 'error'); return; }
           const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(email)){ showToast('דוא״ל לא תקין', 'error'); return; }
 
-          const ok = await confirmDialog(`לקיחת פרק ${toHebNum(chapterNum,false)}?`, 'לקיחת פרק');
-          if (!ok) return;
-
-          // take it
+          // take it immediately (no extra confirm)
           chapter.status='taken';
           chapter.takenBy=name;
           chapter.takenByEmail=email;
           this.saveCampaigns(campaigns);
 
-          // Preload Sefaria text for the email (best-effort; defined below)
+          // Preload Sefaria text for the email
           fetchChapterFromSefaria(chapterNum).catch(()=>{});
 
-          // refresh
+          // UI updates
           this.displayChapters(c.chapters);
           this.updateProgress(c.chapters);
+          showToast(`פרק ${toHebNum(chapterNum,false)} נלקח`, 'success');
 
-          showToast(`פרק ${toHebNum(chapterNum,false)} נלקח בהצלחה`, 'success');
-
-          // open action modal with view/finish options
-          this.openChapterActionModal(chapterNum);
+          // open text with one “סיימתי” button
+          this.openChapterActionModal(chapterNum, {mode:'taken'});
 
           // emails (non-blocking; will wait for Sefaria inside)
           this.sendChapterTakenEmail(c, chapterNum, name, email);
           return;
         }
 
-        // If already taken or completed → open action modal (view/finish)
-        this.openChapterActionModal(chapterNum);
+        // Taken → open with a single “סיימתי” button
+        if (chapter.status === 'taken'){
+          this.openChapterActionModal(chapterNum, {mode:'taken'});
+          return;
+        }
+
+        // Completed → open read-only
+        this.openChapterActionModal(chapterNum, {mode:'completed'});
       }
 
-      openChapterActionModal(chapterNum){
-        // (this version is wrapped/overridden by Sefaria loader below to ensure real text)
+      async openChapterActionModal(chapterNum, {mode}={}){
         this.currentChapterNum = chapterNum;
         document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum,false)}`;
         document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || 'טוען טקסט...';
         document.getElementById('chapterModal').classList.add('on');
 
-        document.getElementById('viewChapterBtn').onclick = ()=> showToast('מציג את הפרק', 'info');
-        document.getElementById('finishChapterBtn').onclick = ()=> this.completeChapter(chapterNum);
+        try{
+          const t = await fetchChapterFromSefaria(chapterNum);
+          document.getElementById('chapterContent').textContent = t;
+        }catch(e){
+          showToast('שגיאה בטעינת הטקסט מסֶפַרְיָה', 'error');
+          console.error(e);
+        }
+
+        const finishBtn = document.getElementById('finishChapterBtn');
+        if (mode==='taken'){
+          finishBtn.style.display='';
+          finishBtn.onclick = ()=> this.completeChapter(chapterNum);
+        } else {
+          finishBtn.style.display='none';
+          finishBtn.onclick = null;
+        }
       }
 
       async completeChapter(chapterNum){
-        const ok = await confirmDialog(`לסמן את פרק ${toHebNum(chapterNum,false)} כהושלם?`, 'סיום פרק');
-        if (!ok) return;
-
         const campaigns = this.getCampaigns();
         const c = campaigns[this.currentCampaignId];
         const ch = c.chapters[chapterNum];
@@ -587,7 +596,7 @@
           chapterText = `תהילים — פרק ${toHebNum(chapterNum,false)}\n(לצפייה בטקסט המלא היכנסו לקישור הקמפיין)`;
         }
 
-        // 1) Notify organizer (kept per your template choice)
+        // Organizer notice (kept per your template choice)
         if (this.emailConfig.chapterCompletedTemplateId){
           const orgParams = {
             to_email: campaign.organizerEmail,
@@ -603,7 +612,7 @@
           try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
         }
 
-        // 2) Send text to the participant
+        // Send the text to participant
         if (userEmail && this.emailConfig.chapterTakenTemplateId){
           const campaignUrl = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
           const userParams = {
@@ -661,11 +670,11 @@
       }
       getTehillimTexts(){
         const t = {};
-        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i,false)}\n(יטען מה־Sefaria בעת הצורך)`;
+        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i,false)}\n(יטען מסֶפַרְיָה בעת הצורך)`;
         return t;
       }
 
-      /* list only campaigns from last 24 hours (older remain accessible via their link) */
+      /* list only campaigns from last 24 hours (older remain via link) */
       displayExistingCampaigns(){
         const box = document.getElementById('campaignsList');
         const campaigns = this.getCampaigns();
@@ -752,38 +761,6 @@
       }
       return text;
     }
-
-    // Ensure the chapter modal always shows the real Sefaria text
-    const _origOpen = TehillimPlatform.prototype.openChapterActionModal;
-    TehillimPlatform.prototype.openChapterActionModal = async function(chapterNum){
-      this.currentChapterNum = chapterNum;
-      document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum,false)}`;
-      document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || 'טוען טקסט...';
-      document.getElementById('chapterModal').classList.add('on');
-
-      try{
-        const t = await fetchChapterFromSefaria(chapterNum);
-        document.getElementById('chapterContent').textContent = t;
-      }catch(e){
-        showToast('שגיאה בטעינת הטקסט מסֶפַרְיָה', 'error');
-        console.error(e);
-      }
-
-      document.getElementById('viewChapterBtn').onclick = ()=> showToast('מציג את הפרק', 'info');
-      document.getElementById('finishChapterBtn').onclick = ()=> this.completeChapter(chapterNum);
-    };
-
-    // Preload text when user is about to take a chapter (best-effort)
-    const _origHandle = TehillimPlatform.prototype.handleChapterClick;
-    TehillimPlatform.prototype.handleChapterClick = async function(chapterNum){
-      const campaigns = this.getCampaigns();
-      const c = campaigns[this.currentCampaignId];
-      const ch = c?.chapters?.[chapterNum];
-      if (ch && ch.status === 'available'){
-        fetchChapterFromSefaria(chapterNum).catch(()=>{});
-      }
-      return _origHandle.call(this, chapterNum);
-    };
   </script>
 </body>
 </html>
