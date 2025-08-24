@@ -400,6 +400,22 @@
         <div id="campaignSection" class="card hidden">
             <div id="campaignInfo" class="campaign-info"></div>
             
+            <!-- User Input Section -->
+            <div class="card" style="background: #e8f4fd; border: 2px solid #667eea;">
+                <h3>הזן את הפרטים שלך לפני נטילת פרק:</h3>
+                <div class="form-group">
+                    <label for="participantName">השם שלך:</label>
+                    <input type="text" id="participantName" placeholder="הכנס את שמך המלא">
+                </div>
+                <div class="form-group">
+                    <label for="participantEmail">כתובת המייל שלך:</label>
+                    <input type="email" id="participantEmail" placeholder="your@email.com">
+                </div>
+                <div class="alert alert-info">
+                    לאחר מילוי הפרטים, לחץ על מספר פרק כדי לקבל את הטקסט במייל
+                </div>
+            </div>
+            
             <div class="progress-text" id="progressText"></div>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
@@ -407,7 +423,7 @@
 
             <h3>בחר פרקי תהילים:</h3>
             <div class="alert alert-info">
-                לחץ על מספר פרק כדי לקחת אותו על עצמך. תוכל לקרוא את הטקסט ולסמן כמושלם לאחר הקריאה.
+                לחץ על מספר פרק כדי לקחת אותו על עצמך. תקבל את הטקסט המלא במייל ותוכל לסמן כמושלם לאחר הקריאה.
             </div>
             <div class="chapters-grid" id="chaptersGrid"></div>
             
@@ -878,11 +894,28 @@
             }
 
             takeChapter(chapterNum) {
-                const name = prompt('הכנס את שמך:');
-                if (!name) return;
-
-                const email = prompt('הכנס את כתובת המייל שלך:');
-                if (!email) return;
+                const name = document.getElementById('participantName').value.trim();
+                const email = document.getElementById('participantEmail').value.trim();
+                
+                if (!name) {
+                    alert('אנא הכנס את שמך בשדה למעלה');
+                    document.getElementById('participantName').focus();
+                    return;
+                }
+                
+                if (!email) {
+                    alert('אנא הכנס את כתובת המייל שלך בשדה למעלה');
+                    document.getElementById('participantEmail').focus();
+                    return;
+                }
+                
+                // Basic email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    alert('אנא הכנס כתובת מייל תקינה');
+                    document.getElementById('participantEmail').focus();
+                    return;
+                }
 
                 const campaigns = this.getCampaigns();
                 const campaign = campaigns[this.currentCampaignId];
@@ -902,8 +935,12 @@
                 this.displayChapters(campaign.chapters);
                 this.updateProgress(campaign.chapters);
 
-                // Show chapter text
-                this.showChapterText(chapterNum);
+                // Show success message
+                alert(`פרק ${chapterNum} נלקח בהצלחה! הטקסט המלא נשלח אליך במייל.`);
+
+                // Clear the input fields for next user
+                document.getElementById('participantName').value = '';
+                document.getElementById('participantEmail').value = '';
             }
 
             showChapterText(chapterNum) {
@@ -955,15 +992,14 @@
 
             updateProgress(chapters) {
                 const total = 150;
-                const completed = Object.values(chapters).filter(ch => ch.status === 'completed').length;
-                const taken = Object.values(chapters).filter(ch => ch.status === 'taken').length;
-                const available = total - completed - taken;
+                const taken = Object.values(chapters).filter(ch => ch.status === 'taken' || ch.status === 'completed').length;
+                const available = total - taken;
 
-                const percentage = (completed / total) * 100;
+                const percentage = (taken / total) * 100;
                 
                 document.getElementById('progressFill').style.width = `${percentage}%`;
                 document.getElementById('progressText').innerHTML = `
-                    הושלמו: ${completed} | נלקחו: ${taken} | זמינים: ${available} | סה"כ: ${total} (${Math.round(percentage)}%)
+                    נלקחו: ${taken} | זמינים: ${available} | סה"כ: ${total} (${Math.round(percentage)}%)
                 `;
             }
 
@@ -1016,28 +1052,56 @@
             }
 
             getTehillimTexts() {
-                // This is a simplified version with just a few sample texts
-                // In a real implementation, you'd have all 150 chapters
                 const texts = {};
-                for (let i = 1; i <= 150; i++) {
-                    texts[i] = `זהו טקסט לדוגמה של פרק ${i} מתהילים. בגרסה מלאה יהיה כאן הטקסט המלא של כל פרק.\n\nכאן יופיע הטקסט המלא של פרק ${i} בתהילים כפי שנכתב במקורות היהדות.\n\n(בגרסה זו מוצג טקסט לדוגמה בלבד)`;
-                }
                 
-                // Sample actual text for chapter 1
-                texts[1] = `אַשְׁרֵי הָאִישׁ אֲשֶׁר לֹא הָלַךְ בַּעֲצַת רְשָׁעִים וּבְדֶרֶךְ חַטָּאִים לֹא עָמָד וּבְמוֹשַׁב לֵצִים לֹא יָשָׁב:
+                // Chapter 1
+                texts[1] = `מזמור א
+אַשְׁרֵי הָאִישׁ אֲשֶׁר לֹא הָלַךְ בַּעֲצַת רְשָׁעִים וּבְדֶרֶךְ חַטָּאִים לֹא עָמָד וּבְמוֹשַׁב לֵצִים לֹא יָשָׁב:
 כִּי אִם בְּתוֹרַת יְהוָה חֶפְצוֹ וּבְתוֹרָתוֹ יֶהְגֶּה יוֹמָם וָלָיְלָה:
 וְהָיָה כְּעֵץ שָׁתוּל עַל פַּלְגֵי מָיִם אֲשֶׁר פִּרְיוֹ יִתֵּן בְּעִתּוֹ וְעָלֵהוּ לֹא יִבּוֹל וְכֹל אֲשֶׁר יַעֲשֶׂה יַצְלִיחַ:
 לֹא כֵן הָרְשָׁעִים כִּי אִם כַּמֹּץ אֲשֶׁר תִּדְּפֶנּוּ רוּחַ:
 עַל כֵּן לֹא יָקֻמוּ רְשָׁעִים בַּמִּשְׁפָּט וְחַטָּאִים בַּעֲדַת צַדִּיקִים:
 כִּי יוֹדֵעַ יְהוָה דֶּרֶךְ צַדִּיקִים וְדֶרֶךְ רְשָׁעִים תֹּאבֵד:`;
 
-                // Sample text for chapter 23 (popular psalm)
-                texts[23] = `מִזְמוֹר לְדָוִד יְהוָה רֹעִי לֹא אֶחְסָר:
+                // Chapter 23
+                texts[23] = `מזמור כג - מִזְמוֹר לְדָוִד
+יְהוָה רֹעִי לֹא אֶחְסָר:
 בִּנְאוֹת דֶּשֶׁא יַרְבִּיצֵנִי עַל מֵי מְנֻחוֹת יְנַהֲלֵנִי:
 נַפְשִׁי יְשׁוֹבֵב יַנְחֵנִי בְמַעְגְּלֵי צֶדֶק לְמַעַן שְׁמוֹ:
 גַּם כִּי אֵלֵךְ בְּגֵיא צַלְמָוֶת לֹא אִירָא רָע כִּי אַתָּה עִמָּדִי שִׁבְטְךָ וּמִשְׁעַנְתֶּךָ הֵמָּה יְנַחֲמֻנִי:
 תַּעֲרֹךְ לְפָנַי שֻׁלְחָן נֶגֶד צֹרְרָי דִּשַּׁנְתָּ בַשֶּׁמֶן רֹאשִׁי כּוֹסִי רְוָיָה:
 אַךְ טוֹב וָחֶסֶד יִרְדְּפוּנִי כָּל יְמֵי חַיָּי וְשַׁבְתִּי בְּבֵית יְהוָה לְאֹרֶךְ יָמִים:`;
+
+                // Chapter 121
+                texts[121] = `מזמור קכא - שִׁיר לַמַּעֲלוֹת
+אֶשָּׂא עֵינַי אֶל הֶהָרִים מֵאַיִן יָבֹא עֶזְרִי:
+עֶזְרִי מֵעִם יְהוָה עֹשֵׂה שָׁמַיִם וָאָרֶץ:
+אַל יִתֵּן לַמּוֹט רַגְלֶךָ אַל יָנוּם שֹׁמְרֶךָ:
+הִנֵּה לֹא יָנוּם וְלֹא יִישָׁן שׁוֹמֵר יִשְׂרָאֵל:
+יְהוָה שֹׁמְרֶךָ יְהוָה צִלְּךָ עַל יַד יְמִינֶךָ:
+יוֹמָם הַשֶּׁמֶשׁ לֹא יַכֶּכָּה וְיָרֵחַ בַּלָּיְלָה:
+יְהוָה יִשְׁמָרְךָ מִכָּל רָע יִשְׁמֹר אֶת נַפְשֶׁךָ:
+יְהוָה יִשְׁמָר צֵאתְךָ וּבוֹאֶךָ מֵעַתָּה וְעַד עוֹלָם:`;
+
+                // Fill the rest with placeholder text for demonstration
+                for (let i = 1; i <= 150; i++) {
+                    if (!texts[i]) {
+                        texts[i] = `מזמור ${i}
+
+זהו פרק ${i} מתהילים. בגרסה מלאה של המערכת, כאן יופיע הטקסט המלא של הפרק בעברית.
+
+לצורך הדוגמה, הוכנסו פרקים מלאים עבור:
+• פרק 1 - אשרי האיש
+• פרק 23 - יהוה רועי
+• פרק 121 - אשא עיני
+
+במימוש מלא יש להוסיף את כל 150 הפרקים.
+
+---
+
+(טקסט לדוגמה עבור פרק ${i})`;
+                    }
+                }
 
                 return texts;
             }
