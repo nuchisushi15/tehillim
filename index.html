@@ -779,7 +779,7 @@
                     campaign_name: campaign.name,
                     chapter_number: chapterNum,
                     user_name: userName,
-                    message: `${userName} סיים לקרוא פרق ${chapterNum} בקמפיין "${campaign.name}"!`
+                    message: `${userName} סיים לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"!`
                 };
 
                 try {
@@ -1266,6 +1266,73 @@ https://mechon-mamre.org/p/pt/pt26${String(Math.floor(i/100))}${String(i%100).pa
                 modal.style.display = 'none';
             }
         }
+    </script>
+
+    <!-- ✅ NEW: Load full text from your GitHub JSON (NO changes to your existing script) -->
+    <script>
+      (async () => {
+        // ⬇️ Replace with your real path
+        const jsonUrl = "https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/BRANCH/Psalms%20-%20he%20-%20Miqra%20according%20to%20the%20Masorah.json";
+        try {
+          const res = await fetch(jsonUrl);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+
+          // Try to normalize different JSON schemas into {1: "...", 2: "...", ... , 150: "..."}
+          function buildTehillimFromMiqraJSON(src) {
+            const out = {};
+
+            // Common shapes:
+
+            // 1) { chapters: [ ["v1","v2",...], ["v1","v2",...], ... ] }
+            if (Array.isArray(src?.chapters)) {
+              src.chapters.forEach((verses, idx) => {
+                out[idx + 1] = Array.isArray(verses) ? verses.join("\n") : String(verses || "").trim();
+              });
+              return out;
+            }
+
+            // 2) { text: [ ["v1","v2",...], ... ] } (Sefaria-like)
+            if (Array.isArray(src?.text)) {
+              src.text.forEach((verses, idx) => {
+                out[idx + 1] = Array.isArray(verses) ? verses.join("\n") : String(verses || "").trim();
+              });
+              return out;
+            }
+
+            // 3) { "1": ["v1","v2",...], "2": [...], ... } (numeric keys)
+            const numericKeys = Object.keys(src || {}).filter(k => /^\d+$/.test(k));
+            if (numericKeys.length) {
+              numericKeys.sort((a,b)=>Number(a)-Number(b)).forEach(k => {
+                const verses = src[k];
+                out[Number(k)] = Array.isArray(verses) ? verses.join("\n") : String(verses || "").trim();
+              });
+              return out;
+            }
+
+            // 4) Nested book name keys: { Psalms: {...} } or { Tehillim: {...} }
+            const bookNode = src?.Psalms || src?.Tehillim || src?.psalms || src?.tehillim || src?.book || null;
+            if (bookNode) {
+              return buildTehillimFromMiqraJSON(bookNode);
+            }
+
+            console.warn("Unknown Miqra JSON schema; could not parse.");
+            return out;
+          }
+
+          const texts = buildTehillimFromMiqraJSON(data);
+
+          const count = Object.keys(texts).length;
+          if (count >= 150) {
+            window.tehillimPlatform.tehillimTexts = texts;
+            console.log("✅ Loaded full Tehillim from JSON. Chapters:", count);
+          } else {
+            console.warn("⚠️ Parsed only", count, "chapters (expected 150). Check your JSON format or path.");
+          }
+        } catch (err) {
+          console.error("Failed to load Tehillim JSON:", err);
+        }
+      })();
     </script>
 </body>
 </html>
