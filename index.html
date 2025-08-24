@@ -470,9 +470,22 @@
                 this.loadFromUrl();
                 this.displayExistingCampaigns();
                 this.setupEventListeners();
+                
+                // Debug email config after initialization
+                setTimeout(() => {
+                    console.log('=== EMAIL CONFIG DEBUG ===');
+                    console.log('Email config exists:', !!this.emailConfig);
+                    if (this.emailConfig) {
+                        console.log('Campaign template ID:', this.emailConfig.campaignCreatedTemplateId);
+                        console.log('Chapter taken template ID:', this.emailConfig.chapterTakenTemplateId);
+                        console.log('Chapter completed template ID:', this.emailConfig.chapterCompletedTemplateId);
+                    }
+                }, 2000);
             }
 
             loadEmailConfig() {
+                console.log('Loading email configuration...');
+                
                 // Auto-configure with your EmailJS settings including all 3 templates
                 const defaultConfig = {
                     userId: 'd_LsqV-KBZuAeuCjf',
@@ -483,14 +496,40 @@
                 };
 
                 const savedConfig = localStorage.getItem('tehillimEmailConfig');
+                let needsUpdate = false;
+                
                 if (savedConfig) {
-                    this.emailConfig = JSON.parse(savedConfig);
+                    const parsed = JSON.parse(savedConfig);
+                    // Check if we have the old format with single templateId
+                    if (parsed.templateId && !parsed.campaignCreatedTemplateId) {
+                        console.log('Found old email config format, updating...');
+                        needsUpdate = true;
+                    } else {
+                        this.emailConfig = parsed;
+                        console.log('Loaded saved email config:', this.emailConfig);
+                    }
                 } else {
+                    needsUpdate = true;
+                }
+                
+                if (needsUpdate) {
                     // Use default config with all templates
                     this.emailConfig = defaultConfig;
                     // Save to localStorage
                     localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
+                    console.log('Updated to new email config format:', this.emailConfig);
                 }
+                
+                // Verify all template IDs are present
+                if (!this.emailConfig.campaignCreatedTemplateId || 
+                    !this.emailConfig.chapterTakenTemplateId || 
+                    !this.emailConfig.chapterCompletedTemplateId) {
+                    console.warn('Missing template IDs, forcing update...');
+                    this.emailConfig = defaultConfig;
+                    localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
+                }
+                
+                console.log('Final email config:', JSON.stringify(this.emailConfig, null, 2));
                 
                 // Hide setup section since we have complete config
                 document.getElementById('emailSetup').style.display = 'none';
