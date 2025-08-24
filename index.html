@@ -1,1334 +1,828 @@
 <!DOCTYPE html>
-<html lang="en" dir="rtl">
+<html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פלטפורמת תהילים - Tehillim Platform</title>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>פלטפורמת תהילים — עיצוב חדש</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --ink:#1f2937;
+      --muted:#6b7280;
+      --brand:#6d28d9;          /* deep purple */
+      --brand-2:#7c3aed;        /* lighter purple */
+      --accent:#10b981;         /* teal/green */
+      --danger:#ef4444;
+      --ring:rgba(109,40,217,.18);
+      --shadow: 0 10px 30px rgba(17,24,39,.08);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Hebrew", "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+      background: radial-gradient(1000px 600px at 80% -200px, #ede9fe 0%, transparent 70%), var(--bg);
+      color:var(--ink);
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+    /* Layout */
+    .shell{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      min-height:100vh;
+    }
+    @media (max-width: 960px){
+      .shell{grid-template-columns: 1fr}
+      .sidebar{position:static; height:auto}
+    }
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: white;
-        }
+    header.topbar{
+      grid-column: 1 / -1;
+      position: sticky;
+      top:0;
+      z-index: 5;
+      background: rgba(255,255,255,.7);
+      backdrop-filter: saturate(180%) blur(12px);
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .topbar-inner{
+      max-width: 1200px;
+      margin:0 auto;
+      padding:14px 20px;
+      display:flex;
+      align-items:center;
+      gap:16px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; font-weight:800;
+      color:var(--brand);
+      letter-spacing:.2px;
+    }
+    .brand .logo{
+      width:36px; height:36px; border-radius:10px;
+      background: conic-gradient(from 220deg, var(--brand), var(--brand-2));
+      box-shadow: 0 8px 18px var(--ring);
+    }
+    .top-actions{margin-inline-start:auto; display:flex; gap:8px}
+    .btn{
+      appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:600; cursor:pointer;
+      background:var(--brand); color:white;
+      box-shadow: 0 6px 16px var(--ring);
+      transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .btn:hover{transform: translateY(-1px)}
+    .btn:active{transform: translateY(0)}
+    .btn.secondary{background:#111827; color:#fff; box-shadow:none}
+    .btn.ghost{background:transparent; color:var(--brand); box-shadow:none}
+    .btn.success{background:var(--accent)}
+    .btn.danger{background:var(--danger)}
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
+    /* Sidebar */
+    .sidebar{
+      position: sticky; top:60px; align-self:start;
+      height: calc(100vh - 60px);
+      padding:20px;
+      border-inline-end:1px solid #e5e7eb;
+      background:linear-gradient(180deg, rgba(124,58,237,.06), transparent 180px);
+    }
+    .card{
+      background:var(--card); border:1px solid #eef0f6; border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .panel{padding:18px}
+    .panel h3{margin:0 0 8px; font-size:18px}
+    .muted{color:var(--muted)}
+    .hr{height:1px; background:#eef0f6; margin:12px 0}
 
-        .card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            transition: transform 0.3s ease;
-        }
+    .form{display:grid; gap:12px}
+    .row{display:grid; gap:6px}
+    label{font-size:13px; color:#374151; font-weight:600}
+    input, textarea, select{
+      background:#fff; border:1.5px solid #e5e7eb; border-radius:12px; padding:12px 14px; font:inherit;
+      outline:none; transition: border .15s, box-shadow .15s;
+    }
+    textarea{min-height:84px; resize:vertical}
+    input:focus, textarea:focus, select:focus{border-color:var(--brand); box-shadow: 0 0 0 4px var(--ring)}
+    .helper{font-size:12px; color:var(--muted)}
 
-        .card:hover {
-            transform: translateY(-5px);
-        }
+    .campaigns{
+      margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:40vh; overflow:auto;
+    }
+    .camp-item{
+      padding:12px; border-radius:14px; border:1px solid #e5e7eb; background:#fff; cursor:pointer;
+      display:flex; flex-direction:column; gap:6px; transition: background .15s, transform .06s;
+    }
+    .camp-item:hover{background:#fafafa; transform: translateY(-1px)}
+    .caption{font-size:12px; color:var(--muted)}
 
-        .create-section {
-            margin-bottom: 30px;
-        }
+    /* Main */
+    .main{
+      padding:24px; max-width: 1000px; width:100%;
+    }
+    .hero{
+      display:flex; flex-direction:column; gap:10px; margin-bottom:18px;
+    }
+    .hero h2{margin:0}
+    .info-banner{
+      padding:14px; border-radius:14px; background:#f0fdfa; border:1px solid #ccfbf1; color:#065f46;
+    }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
+    .grid{
+      display:grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap:10px;
+    }
+    .chip{
+      user-select:none;
+      text-align:center; padding:12px 6px; border-radius:14px; border:1.5px solid #e5e7eb; background:#fff;
+      font-weight:800; letter-spacing:.3px;
+      transition: transform .06s, border .15s, background .15s, color .15s;
+      cursor:pointer;
+    }
+    .chip:hover{transform: translateY(-1px); border-color:var(--brand)}
+    .chip.taken{background:#eef2ff; border-color:#c7d2fe; color:#4338ca}
+    .chip.completed{background:#e5efe7; border-color:#a7f3d0; color:#065f46}
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
+    .progress{
+      display:flex; align-items:center; gap:14px; margin:14px 0 8px;
+    }
+    .bar{flex:1; height:14px; background:#eef0f6; border-radius:999px; overflow:hidden}
+    .fill{height:100%; width:0; background:linear-gradient(90deg, var(--accent), #34d399); transition: width .45s ease}
 
-        input[type="text"], input[type="email"], textarea, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-            direction: rtl;
-        }
+    .section{margin-top:18px}
+    .stack{display:grid; gap:12px}
 
-        input[type="email"] {
-            direction: ltr;
-        }
+    /* Modal */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:50; }
+    .modal.on{ display:flex }
+    .backdrop{ position:absolute; inset:0; background:rgba(17,24,39,.55); backdrop-filter: blur(4px); }
+    .dialog{ position:relative; width:min(720px, 92vw); max-height:85vh; overflow:auto; background:var(--card); border-radius:20px; box-shadow: 0 20px 60px rgba(17,24,39,.35); }
+    .dialog header{ position:sticky; top:0; background:#fff; padding:16px; border-bottom:1px solid #eef0f6; border-radius:20px 20px 0 0}
+    .dialog .content{ padding:18px; white-space:pre-wrap; line-height:2; font-size:18px }
+    .close-x{ position:absolute; left:14px; top:12px; background:transparent; border:0; font-size:22px; cursor:pointer }
 
-        input[type="text"]:focus, input[type="email"]:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #667eea;
-        }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center; font-size:12px;
+      padding:6px 10px; border-radius:999px; background:#f5f3ff; color:#4c1d95; border:1px solid #ddd6fe;
+    }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
+    .urlbox{padding:10px 12px; background:#f9fafb; border:1px dashed var(--brand); border-radius:12px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; direction:ltr}
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
-        }
-
-        .url-display {
-            background: #f8f9fa;
-            border: 2px dashed #667eea;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            direction: ltr;
-            text-align: center;
-            font-family: monospace;
-            font-size: 14px;
-        }
-
-        .chapters-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .chapter-btn {
-            padding: 10px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            text-align: center;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .chapter-btn:hover {
-            border-color: #667eea;
-            transform: scale(1.05);
-        }
-
-        .chapter-btn.taken {
-            background: #28a745;
-            color: white;
-            border-color: #28a745;
-        }
-
-        .chapter-btn.completed {
-            background: #6c757d;
-            color: white;
-            border-color: #6c757d;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #e1e5e9;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 15px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #28a745, #20c997);
-            transition: width 0.5s ease;
-            border-radius: 10px;
-        }
-
-        .progress-text {
-            text-align: center;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-
-        .campaign-info {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-right: 4px solid #667eea;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .campaigns-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .campaign-item {
-            padding: 15px;
-            border: 1px solid #e1e5e9;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .campaign-item:hover {
-            background: #e9ecef;
-            border-color: #667eea;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .alert-info {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-
-        .alert-warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-        }
-
-        .chapter-text {
-            background: #f8f9fa;
-            border: 1px solid #e1e5e9;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-            direction: rtl;
-            text-align: right;
-            line-height: 2;
-            font-size: 18px;
-            white-space: pre-wrap; /* keep line breaks for פסוקים */
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 20px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto;
-            direction: rtl;
-        }
-
-        .close {
-            color: #aaa;
-            float: left;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: black;
-        }
-
-        .email-setup {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .chapters-grid {
-                grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-                gap: 8px;
-            }
-            
-            .container {
-                padding: 10px;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .modal-content {
-                margin: 2% auto;
-                width: 95%;
-            }
-        }
-    </style>
+    .subtle{color:#4b5563; font-size:13px}
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>פלטפורמת תהילים</h1>
-            <p>יוצרים קמפיינים ומשלימים תהילים יחד</p>
-        </div>
-
-        <!-- Email Setup Section -->
-        <div id="emailSetup" class="card email-setup">
-            <h3>הגדרת שירות מייל</h3>
-            <p>יש צורך ב-3 תבניות מייל שונות. צור אותן ב-EmailJS והכנס את המזהים:</p>
-            <div class="alert alert-info">
-                <strong>תבניות נדרשות:</strong><br>
-                1. יצירת קמפיין - לשליחה למארגן<br>
-                2. נטילת פרק - לשליחה למשתתף עם טקסט הפרק<br>
-                3. השלמת פרק - לשליחה למארגן
-            </div>
-            
-            <div class="form-group">
-                <label for="emailjsUserId">EmailJS Public Key:</label>
-                <input type="text" id="emailjsUserId" value="d_LsqV-KBZuAeuCjf">
-            </div>
-            <div class="form-group">
-                <label for="emailjsServiceId">EmailJS Service ID:</label>
-                <input type="text" id="emailjsServiceId" value="service_p76h23d">
-            </div>
-            
-            <h4>תבניות מייל:</h4>
-            <div class="form-group">
-                <label for="campaignCreatedTemplateId">תבנית יצירת קמפיין (Campaign Created):</label>
-                <input type="text" id="campaignCreatedTemplateId" value="template_0hmmrlk">
-            </div>
-            <div class="form-group">
-                <label for="chapterTakenTemplateId">תבנית נטילת פרק (Chapter Taken):</label>
-                <input type="text" id="chapterTakenTemplateId" value="template_swui2zf">
-            </div>
-            <div class="form-group">
-                <label for="chapterCompletedTemplateId">תבנית השלמת פרק (Chapter Completed):</label>
-                <input type="text" id="chapterCompletedTemplateId" value="template_j01dkdf">
-            </div>
-            
-            <button class="btn" onclick="saveEmailConfig()">שמור הגדרות</button>
-            <button class="btn btn-secondary" onclick="hideEmailSetup()">דלג לעת עתה</button>
-        </div>
-
-        <!-- Create Campaign Section -->
-        <div id="createSection" class="card create-section">
-            <h2>יצירת קמפיין חדש</h2>
-            <form id="campaignForm">
-                <div class="form-group">
-                    <label for="campaignName">שם הקמפיין:</label>
-                    <input type="text" id="campaignName" required placeholder="לרפואת... / לעילוי נשמת... / לזכות...">
-                </div>
-                <div class="form-group">
-                    <label for="campaignDescription">תיאור (אופציונלי):</label>
-                    <textarea id="campaignDescription" placeholder="פרטים נוספים על הקמפיין..."></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="organizerName">שם המארגן:</label>
-                    <input type="text" id="organizerName" required placeholder="השם שלך">
-                </div>
-                <div class="form-group">
-                    <label for="organizerEmail">מייל המארגן:</label>
-                    <input type="email" id="organizerEmail" required placeholder="your@email.com">
-                </div>
-                <button type="submit" class="btn">צור קמפיין</button>
-            </form>
-        </div>
-
-        <!-- Campaign URL Display -->
-        <div id="urlSection" class="card hidden">
-            <h3>קמפיין נוצר בהצלחה!</h3>
-            <div class="alert alert-success">
-                שתף את הקישור הזה עם אחרים כדי שיוכלו להצטרף לקמפיין. נשלח מייל עם הקישור לכתובת שהזנת.
-            </div>
-            <div class="url-display" id="campaignUrl"></div>
-            <button class="btn btn-secondary" onclick="copyUrl()">העתק קישור</button>
-            <button class="btn" onclick="goToCampaign()">עבור לקמפיין</button>
-        </div>
-
-        <!-- Campaign View Section -->
-        <div id="campaignSection" class="card hidden">
-            <div id="campaignInfo" class="campaign-info"></div>
-            
-            <!-- User Input Section -->
-            <div class="card" style="background: #e8f4fd; border: 2px solid #667eea;">
-                <h3>הזן את הפרטים שלך לפני נטילת פרק:</h3>
-                <div class="form-group">
-                    <label for="participantName">השם שלך:</label>
-                    <input type="text" id="participantName" placeholder="הכנס את שמך המלא">
-                </div>
-                <div class="form-group">
-                    <label for="participantEmail">כתובת המייל שלך:</label>
-                    <input type="email" id="participantEmail" placeholder="your@email.com">
-                </div>
-                <div class="alert alert-info">
-                    לאחר מילוי הפרטים, לחץ על מספר פרק כדי לקבל את הטקסט במייל
-                </div>
-            </div>
-            
-            <div class="progress-text" id="progressText"></div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-
-            <h3>בחר פרקי תהילים:</h3>
-            <div class="alert alert-info">
-                לחץ על מספר פרק כדי לקחת אותו על עצמך. תקבל את הטקסט המלא במייל ותוכל לסמן כמושלם לאחר הקריאה.
-            </div>
-            <div class="chapters-grid" id="chaptersGrid"></div>
-            
-            <div style="margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="shareUrl()">שתף קמפיין</button>
-                <button class="btn" onclick="showCreateForm()">צור קמפיין חדש</button>
-            </div>
-        </div>
-
-        <!-- Existing Campaigns -->
-        <div id="existingCampaigns" class="card">
-            <h3>קמפיינים קיימים</h3>
-            <div id="campaignsList" class="campaigns-list">
-                <p>אין קמפיינים קיימים</p>
-            </div>
-        </div>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="logo"></div> פלטפורמת תהילים</div>
+      <div class="top-actions">
+        <button class="btn ghost" onclick="scrollTo({top:0,behavior:'smooth'})">למעלה</button>
+        <button class="btn success" onclick="showCreateForm()">קמפיין חדש</button>
+      </div>
     </div>
+  </header>
 
-    <!-- Chapter Text Modal -->
-    <div id="chapterModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeChapterModal()">&times;</span>
-            <h2 id="chapterTitle"></h2>
-            <div id="chapterContent" class="chapter-text"></div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-secondary" id="completeChapterBtn">סיימתי לקרוא - סמן כמושלם</button>
-                <button class="btn" onclick="closeChapterModal()">סגור</button>
-            </div>
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="card panel">
+        <h3>יצירת קמפיין</h3>
+        <p class="muted">בחר שם, הזן פרטי מארגן, וקבל קישור לשיתוף.</p>
+        <div class="hr"></div>
+        <form id="campaignForm" class="form">
+          <div class="row">
+            <label for="campaignName">שם הקמפיין</label>
+            <input id="campaignName" type="text" placeholder="לרפואת... / לע״נ... / לזכות..." required />
+          </div>
+          <div class="row">
+            <label for="campaignDescription">תיאור (אופציונלי)</label>
+            <textarea id="campaignDescription" placeholder="פרטים נוספים על הקמפיין..."></textarea>
+          </div>
+          <div class="row">
+            <label for="organizerName">שם המארגן</label>
+            <input id="organizerName" type="text" required />
+          </div>
+          <div class="row">
+            <label for="organizerEmail">מייל המארגן</label>
+            <input id="organizerEmail" type="email" placeholder="name@email.com" required />
+            <div class="helper">ישלח לשם קישור לניהול הקמפיין</div>
+          </div>
+          <button class="btn" type="submit">צור קמפיין</button>
+        </form>
+      </div>
+
+      <div class="card panel" style="margin-top:14px">
+        <h3>קמפיינים קיימים</h3>
+        <div id="campaignsList" class="campaigns">
+          <div class="muted">אין קמפיינים קיימים</div>
         </div>
+      </div>
+
+      <div class="card panel" style="margin-top:14px">
+        <h3>הגדרת דוא״ל</h3>
+        <p class="subtle">EmailJS נדרש לשליחת התראות וטקסט הפרק.</p>
+        <div class="hr"></div>
+        <div class="stack">
+          <div class="row">
+            <label for="emailjsUserId">Public Key</label>
+            <input id="emailjsUserId" type="text" value="d_LsqV-KBZuAeuCjf">
+          </div>
+          <div class="row">
+            <label for="emailjsServiceId">Service ID</label>
+            <input id="emailjsServiceId" type="text" value="service_p76h23d">
+          </div>
+          <div class="row">
+            <label for="campaignCreatedTemplateId">תבנית: יצירת קמפיין</label>
+            <input id="campaignCreatedTemplateId" type="text" value="template_0hmmrlk">
+          </div>
+          <div class="row">
+            <label for="chapterTakenTemplateId">תבנית: נטילת פרק</label>
+            <input id="chapterTakenTemplateId" type="text" value="template_swui2zf">
+          </div>
+          <div class="row">
+            <label for="chapterCompletedTemplateId">תבנית: השלמת פרק</label>
+            <input id="chapterCompletedTemplateId" type="text" value="template_j01dkdf">
+          </div>
+          <div style="display:flex; gap:8px">
+            <button class="btn" onclick="saveEmailConfig()">שמור</button>
+            <button class="btn ghost" onclick="testEmailConnection()">בדיקת שליחה</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="hero">
+        <h2>קמפיין תהילים</h2>
+        <div class="info-banner">
+          <b>איך זה עובד?</b> יוצרים קמפיין, משתפים את הקישור, כל משתתף לוקח פרק (מסומן באותיות א-ת),
+          מקבל את הטקסט במייל ומסמן השלמה בסיום.
+        </div>
+      </div>
+
+      <!-- Share URL -->
+      <section id="urlSection" class="card panel" style="display:none">
+        <h3>קמפיין נוצר בהצלחה</h3>
+        <p class="muted">שתפו את הקישור כדי לצרף משתתפים.</p>
+        <div class="urlbox" id="campaignUrl"></div>
+        <div style="display:flex; gap:8px; margin-top:10px">
+          <button class="btn secondary" onclick="copyUrl()">העתק קישור</button>
+          <button class="btn" onclick="goToCampaign()">מעבר לקמפיין</button>
+        </div>
+      </section>
+
+      <!-- Campaign View -->
+      <section id="campaignSection" class="card panel" style="display:none">
+        <div id="campaignInfo" class="stack"></div>
+
+        <div class="card panel" style="background:#faf5ff; border-color:#e9d5ff; margin-top:10px">
+          <h3>לפני נטילת פרק</h3>
+          <div class="stack">
+            <div class="row">
+              <label for="participantName">שמך</label>
+              <input id="participantName" type="text" placeholder="שם מלא">
+            </div>
+            <div class="row">
+              <label for="participantEmail">דוא״ל</label>
+              <input id="participantEmail" type="email" placeholder="name@email.com">
+            </div>
+            <div class="pill">לאחר מילוי הפרטים, לחץ על אות פרק לבחירה</div>
+          </div>
+        </div>
+
+        <div class="progress">
+          <div id="progressText" class="muted"></div>
+          <div class="bar"><div id="progressFill" class="fill"></div></div>
+        </div>
+
+        <div class="section">
+          <h3>בחרו פרקי תהילים</h3>
+          <p class="subtle">לחיצה על האות לוקחת את הפרק על אחריותכם. תקבלו את הטקסט המלא בדוא״ל.</p>
+          <div id="chaptersGrid" class="grid" style="margin-top:10px"></div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:14px">
+          <button class="btn secondary" onclick="shareUrl()">שיתוף קמפיין</button>
+          <button class="btn ghost" onclick="showCreateForm()">קמפיין חדש</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="chapterModal" class="modal" role="dialog" aria-modal="true">
+    <div class="backdrop" onclick="closeChapterModal()"></div>
+    <div class="dialog">
+      <header>
+        <button class="close-x" onclick="closeChapterModal()" aria-label="סגור">×</button>
+        <h3 id="chapterTitle" style="margin:0"></h3>
+      </header>
+      <div id="chapterContent" class="content"></div>
+      <div style="display:flex; gap:8px; padding:0 18px 18px 18px">
+        <button class="btn success" id="completeChapterBtn">סיימתי לקרוא — סמן כמושלם</button>
+        <button class="btn ghost" onclick="closeChapterModal()">סגור</button>
+      </div>
     </div>
-
-    <script>
-        class TehillimPlatform {
-            constructor() {
-                this.currentCampaignId = null;
-                this.currentChapterNum = null;
-                this.emailConfig = null;
-                this.tehillimTexts = this.getTehillimTexts(); // Simplified texts for demo
-                this.init();
-            }
-
-            init() {
-                console.log('Platform initializing...');
-                this.loadEmailConfig();
-                
-                // Wait for EmailJS to load before initializing
-                if (typeof emailjs !== 'undefined') {
-                    this.initEmailJS();
-                } else {
-                    console.log('EmailJS not loaded yet, waiting...');
-                    setTimeout(() => {
-                        if (typeof emailjs !== 'undefined') {
-                            this.initEmailJS();
-                        } else {
-                            console.error('EmailJS failed to load');
-                        }
-                    }, 1000);
-                }
-                
-                this.loadFromUrl();
-                this.displayExistingCampaigns();
-                this.setupEventListeners();
-                
-                // Debug email config after initialization
-                setTimeout(() => {
-                    console.log('=== EMAIL CONFIG DEBUG ===');
-                    console.log('Email config exists:', !!this.emailConfig);
-                    if (this.emailConfig) {
-                        console.log('Campaign template ID:', this.emailConfig.campaignCreatedTemplateId);
-                        console.log('Chapter taken template ID:', this.emailConfig.chapterTakenTemplateId);
-                        console.log('Chapter completed template ID:', this.emailConfig.chapterCompletedTemplateId);
-                    }
-                }, 2000);
-            }
-
-            loadEmailConfig() {
-                console.log('Loading email configuration...');
-                
-                // Auto-configure with your EmailJS settings including all 3 templates
-                const defaultConfig = {
-                    userId: 'd_LsqV-KBZuAeuCjf',
-                    serviceId: 'service_p76h23d',
-                    campaignCreatedTemplateId: 'template_0hmmrlk',
-                    chapterTakenTemplateId: 'template_swui2zf',
-                    chapterCompletedTemplateId: 'template_j01dkdf'
-                };
-
-                const savedConfig = localStorage.getItem('tehillimEmailConfig');
-                let needsUpdate = false;
-                
-                if (savedConfig) {
-                    const parsed = JSON.parse(savedConfig);
-                    // Check if we have the old format with single templateId
-                    if (parsed.templateId && !parsed.campaignCreatedTemplateId) {
-                        console.log('Found old email config format, updating...');
-                        needsUpdate = true;
-                    } else {
-                        this.emailConfig = parsed;
-                        console.log('Loaded saved email config:', this.emailConfig);
-                    }
-                } else {
-                    needsUpdate = true;
-                }
-                
-                if (needsUpdate) {
-                    // Use default config with all templates
-                    this.emailConfig = defaultConfig;
-                    // Save to localStorage
-                    localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
-                    console.log('Updated to new email config format:', this.emailConfig);
-                }
-                
-                // Verify all template IDs are present
-                if (!this.emailConfig.campaignCreatedTemplateId || 
-                    !this.emailConfig.chapterTakenTemplateId || 
-                    !this.emailConfig.chapterCompletedTemplateId) {
-                    console.warn('Missing template IDs, forcing update...');
-                    this.emailConfig = defaultConfig;
-                    localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
-                }
-                
-                console.log('Final email config:', JSON.stringify(this.emailConfig, null, 2));
-                
-                // Hide setup section since we have complete config
-                document.getElementById('emailSetup').style.display = 'none';
-            }
-
-            initEmailJS() {
-                console.log('Initializing EmailJS...');
-                console.log('Email config:', JSON.stringify(this.emailConfig, null, 2));
-                
-                if (typeof emailjs === 'undefined') {
-                    console.error('EmailJS library not loaded');
-                    return;
-                }
-                
-                if (this.emailConfig && this.emailConfig.userId) {
-                    try {
-                        // Try both initialization methods
-                        console.log('Trying initialization method 1...');
-                        emailjs.init(this.emailConfig.userId);
-                        console.log('EmailJS initialized successfully with method 1');
-                    } catch (error1) {
-                        console.log('Method 1 failed, trying method 2...');
-                        try {
-                            emailjs.init({
-                                publicKey: this.emailConfig.userId
-                            });
-                            console.log('EmailJS initialized successfully with method 2');
-                        } catch (error2) {
-                            console.error('Both EmailJS initialization methods failed:', error1, error2);
-                        }
-                    }
-                } else {
-                    console.error('No email config or user ID found');
-                }
-            }
-
-            setupEventListeners() {
-                document.getElementById('campaignForm').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.createCampaign();
-                });
-            }
-
-            loadFromUrl() {
-                const urlParams = new URLSearchParams(window.location.search);
-                const campaignId = urlParams.get('campaign');
-                if (campaignId) {
-                    this.loadCampaign(campaignId);
-                }
-            }
-
-            createCampaign() {
-                console.log('Creating campaign...');
-                
-                const name = document.getElementById('campaignName').value;
-                const description = document.getElementById('campaignDescription').value;
-                const organizer = document.getElementById('organizerName').value;
-                const organizerEmail = document.getElementById('organizerEmail').value;
-
-                console.log('Campaign data:', { name, organizer, organizerEmail });
-
-                if (!name || !organizer || !organizerEmail) {
-                    alert('יש למלא את כל השדות הנדרשים');
-                    return;
-                }
-
-                const campaignId = this.generateId();
-                const campaign = {
-                    id: campaignId,
-                    name: name,
-                    description: description,
-                    organizer: organizer,
-                    organizerEmail: organizerEmail,
-                    created: new Date().toISOString(),
-                    chapters: this.initializeChapters()
-                };
-
-                console.log('Generated campaign:', campaign);
-
-                try {
-                    // Save to localStorage
-                    const campaigns = this.getCampaigns();
-                    campaigns[campaignId] = campaign;
-                    localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
-                    console.log('Campaign saved to localStorage');
-
-                    // Send email to organizer
-                    this.sendCampaignCreatedEmail(campaign);
-
-                    // Show URL
-                    this.showCampaignUrl(campaignId);
-                    
-                    // Clear form
-                    document.getElementById('campaignForm').reset();
-                    
-                    console.log('Campaign creation completed');
-                } catch (error) {
-                    console.error('Error creating campaign:', error);
-                    alert('שגיאה ביצירת הקמפיין: ' + error.message);
-                }
-            }
-
-            async sendCampaignCreatedEmail(campaign) {
-                console.log('=== SENDING CAMPAIGN CREATED EMAIL ===');
-                console.log('Campaign:', JSON.stringify(campaign, null, 2));
-                console.log('Email config:', JSON.stringify(this.emailConfig, null, 2));
-                
-                if (typeof emailjs === 'undefined') {
-                    console.error('❌ EmailJS library not loaded');
-                    alert('EmailJS לא נטען');
-                    return;
-                }
-                
-                if (!this.emailConfig) {
-                    console.error('❌ No email config');
-                    alert('אין הגדרות מייל');
-                    return;
-                }
-                
-                if (!this.emailConfig.campaignCreatedTemplateId) {
-                    console.error('❌ No campaign template ID');
-                    alert('אין מזהה תבנית לקמפיין');
-                    return;
-                }
-
-                const campaignUrl = `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`;
-                
-                const templateParams = {
-                    to_email: campaign.organizerEmail,
-                    to_name: campaign.organizer,
-                    from_name: "פלטפורמת תהילים",
-                    campaign_name: campaign.name,
-                    campaign_url: campaignUrl,
-                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`,
-                    subject: `קמפיין תהילים נוצר - ${campaign.name}`
-                };
-
-                console.log('📧 Template params:', JSON.stringify(templateParams, null, 2));
-                console.log('📨 Sending to service:', this.emailConfig.serviceId);
-                console.log('📄 Using template:', this.emailConfig.campaignCreatedTemplateId);
-
-                try {
-                    console.log('🚀 Starting email send...');
-                    const result = await emailjs.send(
-                        this.emailConfig.serviceId,
-                        this.emailConfig.campaignCreatedTemplateId,
-                        templateParams
-                    );
-                    console.log('✅ Email sent successfully!', result);
-                    alert('קמפיין נוצר בהצלחה! נשלח מייל עם הקישור');
-                } catch (error) {
-                    console.error('❌ Email send failed:', error);
-                    console.error('Error details:', JSON.stringify(error, null, 2));
-                    
-                    // Try to give more specific error info
-                    let errorMessage = 'שגיאה לא ידועה';
-                    if (error.text) {
-                        errorMessage = error.text;
-                    } else if (error.message) {
-                        errorMessage = error.message;
-                    } else if (typeof error === 'string') {
-                        errorMessage = error;
-                    }
-                    
-                    alert('הקמפיין נוצר אך המייל לא נשלח. שגיאה: ' + errorMessage);
-                }
-            }
-
-            async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail) {
-                if (typeof emailjs === 'undefined' || !this.emailConfig) return;
-
-                // Send notification to campaign organizer
-                if (this.emailConfig.chapterCompletedTemplateId) {
-                    const organizerParams = {
-                        to_email: campaign.organizerEmail,
-                        to_name: campaign.organizer,
-                        from_name: "פלטפורמת תהילים",
-                        campaign_name: campaign.name,
-                        chapter_number: chapterNum,
-                        participant_name: userName,
-                        participant_email: userEmail,
-                        message: `${userName} לקח על עצמו לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"`,
-                        subject: `פרק נלקח - ${campaign.name}`
-                    };
-
-                    try {
-                        await emailjs.send(
-                            this.emailConfig.serviceId,
-                            this.emailConfig.chapterCompletedTemplateId,
-                            organizerParams
-                        );
-                        console.log('Organizer notification sent');
-                    } catch (error) {
-                        console.error('Organizer notification failed:', error);
-                    }
-                }
-
-                // Send chapter text to participant
-                if (userEmail && this.emailConfig.chapterTakenTemplateId) {
-                    const userParams = {
-                        to_email: userEmail,
-                        to_name: userName,
-                        from_name: "פלטפורמת תהילים",
-                        campaign_name: campaign.name,
-                        chapter_number: chapterNum,
-                        chapter_text: this.tehillimTexts[chapterNum],
-                        campaign_url: `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`,
-                        message: `קיבלת את פרק ${chapterNum} מתהילים עבור קמפיין "${campaign.name}". אחרי שתסיים לקרוא, חזור לאתר וסמן כמושלם.`,
-                        subject: `פרק ${chapterNum} מתהילים - ${campaign.name}`
-                    };
-
-                    try {
-                        await emailjs.send(
-                            this.emailConfig.serviceId,
-                            this.emailConfig.chapterTakenTemplateId,
-                            userParams
-                        );
-                        console.log('Chapter text sent to participant');
-                    } catch (error) {
-                        console.error('Chapter text email failed:', error);
-                    }
-                }
-            }
-
-            async sendChapterCompletedEmail(campaign, chapterNum, userName) {
-                if (!this.emailConfig) return;
-
-                const templateParams = {
-                    to_name: campaign.organizer,
-                    to_email: campaign.organizerEmail,
-                    campaign_name: campaign.name,
-                    chapter_number: chapterNum,
-                    user_name: userName,
-                    message: `${userName} סיים לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"!`
-                };
-
-                try {
-                    await emailjs.send(
-                        this.emailConfig.serviceId,
-                        this.emailConfig.templateId,
-                        templateParams
-                    );
-                } catch (error) {
-                    console.error('Email send failed:', error);
-                }
-            }
-
-            initializeChapters() {
-                const chapters = {};
-                for (let i = 1; i <= 150; i++) {
-                    chapters[i] = {
-                        status: 'available', // available, taken, completed
-                        takenBy: null,
-                        takenByEmail: null,
-                        completedAt: null
-                    };
-                }
-                return chapters;
-            }
-
-            generateId() {
-                return Date.now().toString(36) + Math.random().toString(36).substr(2);
-            }
-
-            getCampaigns() {
-                const campaigns = localStorage.getItem('tehillimCampaigns');
-                return campaigns ? JSON.parse(campaigns) : {};
-            }
-
-            showCampaignUrl(campaignId) {
-                const baseUrl = window.location.origin + window.location.pathname;
-                const campaignUrl = `${baseUrl}?campaign=${campaignId}`;
-                
-                document.getElementById('campaignUrl').textContent = campaignUrl;
-                document.getElementById('createSection').classList.add('hidden');
-                document.getElementById('urlSection').classList.remove('hidden');
-                
-                this.currentCampaignId = campaignId;
-            }
-
-            loadCampaign(campaignId) {
-                const campaigns = this.getCampaigns();
-                const campaign = campaigns[campaignId];
-
-                if (!campaign) {
-                    alert('קמפיין לא נמצא');
-                    return;
-                }
-
-                this.currentCampaignId = campaignId;
-                this.displayCampaign(campaign);
-            }
-
-            displayCampaign(campaign) {
-                document.getElementById('createSection').classList.add('hidden');
-                document.getElementById('urlSection').classList.add('hidden');
-                document.getElementById('campaignSection').classList.remove('hidden');
-
-                // Display campaign info
-                const infoDiv = document.getElementById('campaignInfo');
-                infoDiv.innerHTML = `
-                    <h2>${campaign.name}</h2>
-                    ${campaign.description ? `<p><strong>תיאור:</strong> ${campaign.description}</p>` : ''}
-                    <p><strong>מארגן:</strong> ${campaign.organizer}</p>
-                    <p><strong>נוצר:</strong> ${new Date(campaign.created).toLocaleDateString('he-IL')}</p>
-                `;
-
-                // Display chapters
-                this.displayChapters(campaign.chapters);
-                this.updateProgress(campaign.chapters);
-            }
-
-            displayChapters(chapters) {
-                const grid = document.getElementById('chaptersGrid');
-                grid.innerHTML = '';
-
-                for (let i = 1; i <= 150; i++) {
-                    const chapter = chapters[i];
-                    const btn = document.createElement('div');
-                    btn.className = `chapter-btn ${chapter.status}`;
-                    btn.textContent = i;
-                    btn.onclick = () => this.handleChapterClick(i);
-                    
-                    if (chapter.status === 'taken') {
-                        btn.title = `נלקח על ידי: ${chapter.takenBy || 'אלמוני'}`;
-                    } else if (chapter.status === 'completed') {
-                        btn.title = `הושלם על ידי: ${chapter.takenBy || 'אלמוני'}`;
-                    }
-                    
-                    grid.appendChild(btn);
-                }
-            }
-
-            handleChapterClick(chapterNum) {
-                const campaigns = this.getCampaigns();
-                const campaign = campaigns[this.currentCampaignId];
-                const chapter = campaign.chapters[chapterNum];
-
-                if (chapter.status === 'available') {
-                    this.takeChapter(chapterNum);
-                } else if (chapter.status === 'taken') {
-                    this.showChapterText(chapterNum);
-                } else {
-                    alert('פרק זה כבר הושלם');
-                }
-            }
-
-            takeChapter(chapterNum) {
-                const name = document.getElementById('participantName').value.trim();
-                const email = document.getElementById('participantEmail').value.trim();
-                
-                if (!name) {
-                    alert('אנא הכנס את שמך בשדה למעלה');
-                    document.getElementById('participantName').focus();
-                    return;
-                }
-                
-                if (!email) {
-                    alert('אנא הכנס את כתובת המייל שלך בשדה למעלה');
-                    document.getElementById('participantEmail').focus();
-                    return;
-                }
-                
-                // Basic email validation
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    alert('אנא הכנס כתובת מייל תקינה');
-                    document.getElementById('participantEmail').focus();
-                    return;
-                }
-
-                const campaigns = this.getCampaigns();
-                const campaign = campaigns[this.currentCampaignId];
-                const chapter = campaign.chapters[chapterNum];
-
-                chapter.status = 'taken';
-                chapter.takenBy = name;
-                chapter.takenByEmail = email;
-
-                // Save changes
-                localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
-                
-                // Send emails
-                this.sendChapterTakenEmail(campaign, chapterNum, name, email);
-
-                // Refresh display
-                this.displayChapters(campaign.chapters);
-                this.updateProgress(campaign.chapters);
-
-                // Show success message
-                alert(`פרק ${chapterNum} נלקח בהצלחה! הטקסט המלא נשלח אליך במייל.`);
-
-                // Clear the input fields for next user
-                document.getElementById('participantName').value = '';
-                document.getElementById('participantEmail').value = '';
-            }
-
-            showChapterText(chapterNum) {
-                this.currentChapterNum = chapterNum;
-                
-                document.getElementById('chapterTitle').textContent = `תהילים פרק ${chapterNum}`;
-                document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum];
-                document.getElementById('chapterModal').style.display = 'block';
-
-                // Set up complete button
-                document.getElementById('completeChapterBtn').onclick = () => this.completeChapter(chapterNum);
-            }
-
-            completeChapter(chapterNum) {
-                const campaigns = this.getCampaigns();
-                const campaign = campaigns[this.currentCampaignId];
-                const chapter = campaign.chapters[chapterNum];
-
-                if (chapter.status !== 'taken') {
-                    alert('לא ניתן לסמן פרק שלא נלקח');
-                    return;
-                }
-
-                const confirm = window.confirm(`האם סיימת לקרוא פרק ${chapterNum}?`);
-                if (!confirm) return;
-
-                chapter.status = 'completed';
-                chapter.completedAt = new Date().toISOString();
-
-                // Save changes
-                localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
-
-                // Send completion email
-                this.sendChapterCompletedEmail(campaign, chapterNum, chapter.takenBy);
-
-                // Refresh display
-                this.displayChapters(campaign.chapters);
-                this.updateProgress(campaign.chapters);
-
-                // Close modal
-                this.closeChapterModal();
-
-                alert('תודה על השלמת הפרק!');
-            }
-
-            closeChapterModal() {
-                document.getElementById('chapterModal').style.display = 'none';
-            }
-
-            updateProgress(chapters) {
-                const total = 150;
-                const taken = Object.values(chapters).filter(ch => ch.status === 'taken' || ch.status === 'completed').length;
-                const available = total - taken;
-
-                const percentage = (taken / total) * 100;
-                
-                document.getElementById('progressFill').style.width = `${percentage}%`;
-                document.getElementById('progressText').innerHTML = `
-                    נלקחו: ${taken} | זמינים: ${available} | סה"כ: ${total} (${Math.round(percentage)}%)
-                `;
-            }
-
-            displayExistingCampaigns() {
-                console.log('Displaying existing campaigns...');
-                const campaigns = this.getCampaigns();
-                console.log('Found campaigns:', JSON.stringify(campaigns, null, 2));
-                
-                const listDiv = document.getElementById('campaignsList');
-                
-                const campaignIds = Object.keys(campaigns || {});
-                console.log('Campaign IDs:', campaignIds);
-                
-                if (campaignIds.length === 0) {
-                    listDiv.innerHTML = '<p>אין קמפיינים קיימים</p>';
-                    return;
-                }
-
-                listDiv.innerHTML = '';
-                campaignIds.forEach(id => {
-                    const campaign = campaigns[id];
-                    if (!campaign || !campaign.chapters) {
-                        console.error('Invalid campaign data for ID:', id);
-                        return;
-                    }
-                    
-                    const completed = Object.values(campaign.chapters).filter(ch => ch && ch.status === 'completed').length;
-                    const percentage = Math.round((completed / 150) * 100);
-
-                    const item = document.createElement('div');
-                    item.className = 'campaign-item';
-                    item.onclick = () => this.loadCampaign(id);
-                    item.innerHTML = `
-                        <strong>${campaign.name || 'ללא שם'}</strong><br>
-                        <small>מארגן: ${campaign.organizer || 'לא ידוע'} | הושלמו: ${completed}/150 (${percentage}%)</small>
-                    `;
-                    listDiv.appendChild(item);
-                });
-                
-                console.log('Existing campaigns displayed');
-            }
-
-            showCreateForm() {
-                document.getElementById('campaignSection').classList.add('hidden');
-                document.getElementById('urlSection').classList.add('hidden');
-                document.getElementById('createSection').classList.remove('hidden');
-                
-                // Clear URL parameter
-                window.history.pushState({}, document.title, window.location.pathname);
-            }
-
-            getTehillimTexts() {
-                const texts = {};
-                
-                // Chapter 1 - Based on traditional Hebrew text
-                texts[1] = `מזמור א
-אַשְׁרֵי הָאִישׁ אֲשֶׁר לֹא הָלַךְ בַּעֲצַת רְשָׁעִים וּבְדֶרֶךְ חַטָּאִים לֹא עָמָד וּבְמוֹשַׁב לֵצִים לֹא יָשָׁב:
-כִּי אִם בְּתוֹרַת יְהוָה חֶפְצוֹ וּבְתוֹרָתוֹ יֶהְגֶּה יוֹמָם וָלָיְלָה:
-וְהָיָה כְּעֵץ שָׁתוּל עַל פַּלְגֵי מָיִם אֲשֶׁר פִּרְיוֹ יִתֵּן בְּעִתּוֹ וְעָלֵהוּ לֹא יִבּוֹל וְכֹל אֲשֶׁר יַעֲשֶׂה יַצְלִיחַ:
-לֹא כֵן הָרְשָׁעִים כִּי אִם כַּמֹּץ אֲשֶׁר תִּדְּפֶנּוּ רוּחַ:
-עַל כֵּן לֹא יָקֻמוּ רְשָׁעִים בַּמִּשְׁפָּט וְחַטָּאִים בַּעֲדַת צַדִּיקִים:
-כִּי יוֹדֵעַ יְהוָה דֶּרֶךְ צַדִּיקִים וְדֶרֶךְ רְשָׁעִים תֹּאבֵד:`;
-
-                // Chapter 23 - Based on traditional Hebrew text  
-                texts[23] = `מזמור כג - מִזְמוֹר לְדָוִד
-יְהוָה רֹעִי לֹא אֶחְסָר:
-בִּנְאוֹת דֶּשֶׁא יַרְבִּיצֵנִי עַל מֵי מְנֻחוֹת יְנַהֲלֵנִי:
-נַפְשִׁי יְשׁוֹבֵב יַנְחֵנִי בְמַעְגְּלֵי צֶדֶק לְמַעַן שְׁמוֹ:
-גַּם כִּי אֵלֵךְ בְּגֵיא צַלְמָוֶת לֹא אִירָא רָע כִּי אַתָּה עִמָּדִי שִׁבְטְךָ וּמִשְׁעַנְתֶּךָ הֵמָּה יְנַחֲמֻנִי:
-תַּעֲרֹךְ לְפָנַי שֻׁלְחָן נֶגֶד צֹרְרָי דִּשַּׁנְתָּ בַשֶּׁמֶן רֹאשִׁי כּוֹסִי רְוָיָה:
-אַךְ טוֹב וָחֶסֶד יִרְדְּפוּנִי כָּל יְמֵי חַיָּי וְשַׁבְתִּי בְּבֵית יְהוָה לְאֹרֶךְ יָמִים:`;
-
-                // Chapter 91 - Based on traditional Hebrew text
-                texts[91] = `מזמור צא
-יֹשֵׁב בְּסֵתֶר עֶלְיוֹן בְּצֵל שַׁדַּי יִתְלוֹנָן:
-אֹמַר לַיהוָה מַחְסִי וּמְצוּדָתִי אֱלֹהַי אֶבְטַח בּוֹ:
-כִּי הוּא יַצִּילְךָ מִפַּח יָקוּשׁ מִדֶּבֶר הַוּוֹת:
-בְּאֶבְרָתוֹ יָסֶךְ לָךְ וְתַחַת כְּנָפָיו תֶּחְסֶה צִנָּה וְסֹחֵרָה אֲמִתּוֹ:
-לֹא תִירָא מִפַּחַד לָיְלָה מֵחֵץ יָעוּף יוֹמָם:
-מִדֶּבֶר בָּאֹפֶל יַהֲלֹךְ מִקֶּטֶב יָשׁוּד צָהֳרָיִם:
-יִפֹּל מִצִּדְּךָ אֶלֶף וּרְבָבָה מִימִינֶךָ אֵלֶיךָ לֹא יִגָּשׁ:
-רַק בְּעֵינֶיךָ תַבִּיט וְשִׁלֻּמַת רְשָׁעִים תִּרְאֶה:
-כִּי אַתָּה יְהוָה מַחְסִי עֶלְיוֹן שַׂמְתָּ מְעוֹנֶךָ:
-לֹא תְאֻנֶּה אֵלֶיךָ רָעָה וְנֶגַע לֹא יִקְרַב בְּאָהֳלֶךָ:
-כִּי מַלְאָכָיו יְצַוֶּה לָּךְ לִשְׁמָרְךָ בְּכָל דְּרָכֶיךָ:
-עַל כַּפַּיִם יִשָּׂאוּנְךָ פֶּן תִּגֹּף בָּאֶבֶן רַגְלֶךָ:
-עַל שַׁחַל וָפֶתֶן תִּדְרֹךְ תִּרְמֹס כְּפִיר וְתַנִּין:
-כִּי בִי חָשַׁק וַאֲפַלְּטֵהוּ אֲשַׂגְּבֵהוּ כִּי יָדַע שְׁמִי:
-יִקְרָאֵנִי וְאֶעֱנֵהוּ עִמּוֹ אָנֹכִי בְצָרָה אֲחַלְּצֵהוּ וַאֲכַבְּדֵהוּ:
-אֹרֶךְ יָמִים אַשְׂבִּיעֵהוּ וְאַרְאֵהוּ בִּישׁוּעָתִי:`;
-
-                // Chapter 121 - Based on traditional Hebrew text
-                texts[121] = `מזמור קכא - שִׁיר לַמַּעֲלוֹת
-אֶשָּׂא עֵינַי אֶל הֶהָרִים מֵאַיִן יָבֹא עֶזְרִי:
-עֶזְרִי מֵעִם יְהוָה עֹשֵׂה שָׁמַיִם וָאָרֶץ:
-אַל יִתֵּן לַמּוֹט רַגְלֶךָ אַל יָנוּם שֹׁמְרֶךָ:
-הִנֵּה לֹא יָנוּם וְלֹא יִישָׁן שׁוֹמֵר יִשְׂרָאֵל:
-יְהוָה שֹׁמְרֶךָ יְהוָה צִלְּךָ עַל יַד יְמִינֶךָ:
-יוֹמָם הַשֶּׁמֶשׁ לֹא יַכֶּכָּה וְיָרֵחַ בַּלָּיְלָה:
-יְהוָה יִשְׁמָרְךָ מִכָּל רָע יִשְׁמֹר אֶת נַפְשֶׁךָ:
-יְהוָה יִשְׁמָר צֵאתְךָ וּבוֹאֶךָ מֵעַתָּה וְעַד עוֹלָם:`;
-
-                // A couple more examples
-                const popularChapters = {
-                    2: `מזמור ב
-(1) לָמָּה רָגְשׁוּ גוֹיִם וּלְאֻמִּים יֶהְגּוּ רִיק:
-(2) יִתְיַצְּבוּ מַלְכֵי אֶרֶץ וְרוֹזְנִים נוֹסְדוּ יָחַד עַל יְהוָה וְעַל מְשִׁיחוֹ:
-...`,
-                    3: `מזמור ג - מִזְמוֹר לְדָוִד בְּבָרְחוֹ מִפְּנֵי אַבְשָׁלוֹם בְּנוֹ
-(1) יְהוָה מָה רַבּוּ צָרָי רַבִּים קָמִים עָלָי:
-(2) רַבִּים אֹמְרִים לְנַפְשִׁי אֵין יְשׁוּעָתָה לּוֹ בֵאלֹהִים סֶלָה:
-...`
-                };
-                Object.assign(texts, popularChapters);
-
-                // Fill others with a placeholder (will be replaced by JSON loader)
-                for (let i = 1; i <= 150; i++) {
-                    if (!texts[i]) {
-                        texts[i] = `מזמור ${i}\n(placeholder – יתעדכן אוטומטית מה-JSON)`;
-                    }
-                }
-                return texts;
-            }
-        }
-
-        // Global functions (unchanged)
-        function saveEmailConfig() {
-            const userId = document.getElementById('emailjsUserId').value;
-            const serviceId = document.getElementById('emailjsServiceId').value;
-            const campaignCreatedTemplateId = document.getElementById('campaignCreatedTemplateId').value;
-            const chapterTakenTemplateId = document.getElementById('chapterTakenTemplateId').value;
-            const chapterCompletedTemplateId = document.getElementById('chapterCompletedTemplateId').value;
-
-            if (!userId || !serviceId || !campaignCreatedTemplateId || !chapterTakenTemplateId || !chapterCompletedTemplateId) {
-                alert('יש למלא את כל השדות');
-                return;
-            }
-
-            console.log('Saving email config with multiple templates');
-
-            const config = { 
-                userId, 
-                serviceId, 
-                campaignCreatedTemplateId, 
-                chapterTakenTemplateId, 
-                chapterCompletedTemplateId 
-            };
-            localStorage.setItem('tehillimEmailConfig', JSON.stringify(config));
-            
-            window.tehillimPlatform.emailConfig = config;
-            window.tehillimPlatform.initEmailJS();
-            
-            document.getElementById('emailSetup').style.display = 'none';
-            
-            // Test email immediately after saving config
-            setTimeout(() => {
-                testEmailConnection();
-            }, 1000);
-        }
-
-        async function testEmailConnection() {
-            console.log('=== TESTING EMAIL CONNECTION ===');
-            
-            if (!window.tehillimPlatform.emailConfig) {
-                console.error('No email config for testing');
-                return;
-            }
-            
-            const testEmail = prompt('הכנס כתובת מייל לבדיקה:', 'test@example.com');
-            if (!testEmail) return;
-            
-            const testParams = {
-                to_email: testEmail,
-                to_name: 'Test User',
-                from_name: "פלטפורמת תהילים - Test",
-                campaign_name: 'Test Campaign',
-                campaign_url: 'https://example.com/test',
-                message: 'This is a test email to verify EmailJS configuration.',
-                subject: 'Test Email - Tehillim Platform'
-            };
-            
-            console.log('Test params:', JSON.stringify(testParams, null, 2));
-            
-            try {
-                console.log('🚀 Sending test email...');
-                const result = await emailjs.send(
-                    window.tehillimPlatform.emailConfig.serviceId,
-                    window.tehillimPlatform.emailConfig.campaignCreatedTemplateId,
-                    testParams
-                );
-                console.log('✅ Test email sent successfully:', result);
-                alert('בדיקת המייל הצליחה! בדוק את תיבת הדואר.');
-            } catch (error) {
-                console.error('❌ Test email failed:', error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
-                alert('בדיקת המייל נכשלה: ' + (error.text || error.message));
-            }
-        }
-
-        function hideEmailSetup() {
-            document.getElementById('emailSetup').style.display = 'none';
-        }
-
-        function copyUrl() {
-            const url = document.getElementById('campaignUrl').textContent;
-            navigator.clipboard.writeText(url).then(() => {
-                alert('הקישור הועתק ללוח!');
-            });
-        }
-
-        function goToCampaign() {
-            const campaigns = window.tehillimPlatform.getCampaigns();
-            const campaign = campaigns[window.tehillimPlatform.currentCampaignId];
-            
-            // Hide URL section and show campaign
-            document.getElementById('urlSection').classList.add('hidden');
-            window.tehillimPlatform.displayCampaign(campaign);
-            
-            // Update URL without page reload
-            const baseUrl = window.location.origin + window.location.pathname;
-            const newUrl = `${baseUrl}?campaign=${window.tehillimPlatform.currentCampaignId}`;
-            window.history.pushState({}, document.title, newUrl);
-        }
-
-        function shareUrl() {
-            const baseUrl = window.location.origin + window.location.pathname;
-            const url = `${baseUrl}?campaign=${window.tehillimPlatform.currentCampaignId}`;
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'קמפיין תהילים',
-                    text: 'הצטרף אלי לקמפיין תהילים',
-                    url: url
-                });
-            } else {
-                navigator.clipboard.writeText(url).then(() => {
-                    alert('הקישור הועתק ללוח!');
-                });
-            }
-        }
-
-        function closeChapterModal() {
-            document.getElementById('chapterModal').style.display = 'none';
-        }
-
-        // Initialize the platform
-        window.tehillimPlatform = new TehillimPlatform();
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('chapterModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        }
-    </script>
-
-    <!-- ✅ Loader: fetch JSON and format each פרק by פסוק numbers -->
-    <script>
-      (async () => {
-        const jsonUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Miqra%20according%20to%20the%20Masorah.json";
-        try {
-          const res = await fetch(jsonUrl);
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const data = await res.json();
-
-          const numberVerses = (versesArr) => {
-            if (!Array.isArray(versesArr)) return String(versesArr || "").trim();
-            return versesArr
-              .map((v, i) => `(${i + 1}) ${typeof v === 'string' ? v.trim() : String(v || '').trim()}`)
-              .join('\n');
+  </div>
+
+  <script>
+    /* ---------- Hebrew numerals ---------- */
+    const H_UNITS = {1:'א',2:'ב',3:'ג',4:'ד',5:'ה',6:'ו',7:'ז',8:'ח',9:'ט'};
+    const H_TENS = {10:'י',20:'כ',30:'ל',40:'מ',50:'נ',60:'ס',70:'ע',80:'פ',90:'צ'};
+    const H_HUND = {100:'ק',200:'ר',300:'ש',400:'ת'};
+    function toHebNum(n, punctuation=true){
+      // Build additive Hebrew numerals: 1..999+
+      let result = '';
+      let num = n;
+
+      // hundreds (400, 300, 200, 100 ...)
+      [400,300,200,100].forEach(h=>{
+        while(num>=h){ result += H_HUND[h]; num -= h; }
+      });
+
+      // tens special cases (15, 16 as ט״ו, ט״ז)
+      if (num === 15){ result += 'טו'; num = 0; }
+      else if (num === 16){ result += 'טז'; num = 0; }
+      else{
+        [90,80,70,60,50,40,30,20,10].forEach(t=>{
+          while(num>=t){ result += H_TENS[t]; num -= t; }
+        });
+      }
+
+      // units
+      if (num>0) result += H_UNITS[num] || '';
+
+      // gershayim/geresh (optional visual punctuation)
+      if (!punctuation) return result;
+      if (result.length >= 2){
+        // add ״ before last char
+        return result.slice(0,-1) + '״' + result.slice(-1);
+      }else if (result.length === 1){
+        return result + '׳';
+      }
+      return result;
+    }
+
+    /* ---------- Platform ---------- */
+    class TehillimPlatform {
+      constructor(){
+        this.currentCampaignId = null;
+        this.currentChapterNum = null;
+        this.emailConfig = null;
+        this.tehillimTexts = this.getTehillimTexts(); // placeholder until JSON loads
+        this.init();
+      }
+
+      init(){
+        this.loadEmailConfig();
+        if (typeof emailjs !== 'undefined') this.initEmailJS();
+
+        this.setupEventListeners();
+        this.loadFromUrl();
+        this.displayExistingCampaigns();
+      }
+
+      setupEventListeners(){
+        document.getElementById('campaignForm').addEventListener('submit', (e)=>{
+          e.preventDefault();
+          this.createCampaign();
+        });
+        // Modal close with ESC
+        window.addEventListener('keydown', (e)=>{ if (e.key==='Escape') this.closeChapterModal(); });
+      }
+
+      /* -------- Email config -------- */
+      loadEmailConfig(){
+        const defaultConfig = {
+          userId: 'd_LsqV-KBZuAeuCjf',
+          serviceId: 'service_p76h23d',
+          campaignCreatedTemplateId: 'template_0hmmrlk',
+          chapterTakenTemplateId: 'template_swui2zf',
+          chapterCompletedTemplateId: 'template_j01dkdf'
+        };
+        const saved = localStorage.getItem('tehillimEmailConfig');
+        if (saved){
+          const parsed = JSON.parse(saved);
+          this.emailConfig = {
+            ...defaultConfig,
+            ...parsed
           };
+        } else {
+          this.emailConfig = defaultConfig;
+          localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
+        }
+      }
 
-          function buildTehillimFromMiqraJSON(src) {
-            const out = {};
+      initEmailJS(){
+        try{
+          emailjs.init(this.emailConfig.userId);
+        }catch(_){
+          try{ emailjs.init({ publicKey: this.emailConfig.userId }); } catch(e){ console.error(e); }
+        }
+      }
 
-            // 1) Array form: { chapters: [ ["v1","v2",...], ... ] }
-            if (Array.isArray(src?.chapters)) {
-              src.chapters.forEach((verses, idx) => {
-                out[idx + 1] = numberVerses(verses);
-              });
-              return out;
-            }
+      /* -------- Routing -------- */
+      loadFromUrl(){
+        const urlParams = new URLSearchParams(location.search);
+        const campaignId = urlParams.get('campaign');
+        if (campaignId) this.loadCampaign(campaignId);
+      }
 
-            // 2) Sefaria-like: { text: [ ["v1","v2",...], ... ] }
-            if (Array.isArray(src?.text)) {
-              src.text.forEach((verses, idx) => {
-                out[idx + 1] = numberVerses(verses);
-              });
-              return out;
-            }
+      /* -------- Campaigns -------- */
+      getCampaigns(){
+        const data = localStorage.getItem('tehillimCampaigns');
+        return data ? JSON.parse(data) : {};
+      }
+      saveCampaigns(c){
+        localStorage.setItem('tehillimCampaigns', JSON.stringify(c));
+      }
 
-            // 3) Numeric keys: { "1": ["v1","v2",...], "2": [...] }
-            const numericKeys = Object.keys(src || {}).filter(k => /^\d+$/.test(k));
-            if (numericKeys.length) {
-              numericKeys.sort((a,b)=>Number(a)-Number(b)).forEach(k => {
-                out[Number(k)] = numberVerses(src[k]);
-              });
-              return out;
-            }
+      createCampaign(){
+        const name = document.getElementById('campaignName').value.trim();
+        const description = document.getElementById('campaignDescription').value.trim();
+        const organizer = document.getElementById('organizerName').value.trim();
+        const organizerEmail = document.getElementById('organizerEmail').value.trim();
+        if (!name || !organizer || !organizerEmail){
+          alert('נא למלא את כל השדות הנדרשים'); return;
+        }
 
-            // 4) Nested under book key
-            const bookNode = src?.Psalms || src?.Tehillim || src?.psalms || src?.tehillim || src?.book || null;
-            if (bookNode) return buildTehillimFromMiqraJSON(bookNode);
+        const id = this.generateId();
+        const campaign = {
+          id, name, description, organizer, organizerEmail,
+          created: new Date().toISOString(),
+          chapters: this.initializeChapters()
+        };
+        const campaigns = this.getCampaigns();
+        campaigns[id] = campaign;
+        this.saveCampaigns(campaigns);
 
-            console.warn("Unknown JSON schema; could not parse.");
+        this.sendCampaignCreatedEmail(campaign);
+        this.showCampaignUrl(id);
+        (document.getElementById('campaignForm')).reset();
+        this.displayExistingCampaigns();
+      }
+
+      showCampaignUrl(id){
+        const base = location.origin + location.pathname;
+        const url = `${base}?campaign=${id}`;
+        document.getElementById('campaignUrl').textContent = url;
+        document.getElementById('urlSection').style.display = '';
+      }
+
+      loadCampaign(id){
+        const campaigns = this.getCampaigns();
+        const c = campaigns[id];
+        if (!c){ alert('קמפיין לא נמצא'); return; }
+        this.currentCampaignId = id;
+        this.displayCampaign(c);
+      }
+
+      displayCampaign(campaign){
+        document.getElementById('urlSection').style.display = 'none';
+        document.getElementById('campaignSection').style.display = '';
+
+        const info = document.getElementById('campaignInfo');
+        info.innerHTML = `
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <h3 style="margin:0">${campaign.name}</h3>
+            <span class="pill">נוצר: ${new Date(campaign.created).toLocaleDateString('he-IL')}</span>
+          </div>
+          ${campaign.description ? `<div class="muted">${campaign.description}</div>` : ''}
+          <div class="subtle">מארגן: <b>${campaign.organizer}</b></div>
+        `;
+
+        this.displayChapters(campaign.chapters);
+        this.updateProgress(campaign.chapters);
+      }
+
+      displayChapters(chapters){
+        const grid = document.getElementById('chaptersGrid');
+        grid.innerHTML = '';
+        for (let i=1;i<=150;i++){
+          const ch = chapters[i];
+          const div = document.createElement('div');
+          const state = ch.status; // available | taken | completed
+          div.className = `chip ${state}`;
+          div.textContent = toHebNum(i); // Hebrew chapter label
+          if (state==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
+          if (state==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
+          div.onclick = ()=> this.handleChapterClick(i);
+          grid.appendChild(div);
+        }
+      }
+
+      updateProgress(chapters){
+        const total = 150;
+        const taken = Object.values(chapters).filter(ch => ch.status!=='available').length;
+        const available = total - taken;
+        const pct = Math.round((taken/total)*100);
+        document.getElementById('progressText').textContent = `נלקחו: ${toHebNum(taken, false)} | זמינים: ${toHebNum(available, false)} | סה״כ: ${toHebNum(total, false)} (${pct}%)`;
+        document.getElementById('progressFill').style.width = `${pct}%`;
+      }
+
+      handleChapterClick(chNum){
+        const campaigns = this.getCampaigns();
+        const c = campaigns[this.currentCampaignId];
+        const chapter = c.chapters[chNum];
+
+        if (chapter.status==='available') this.takeChapter(chNum);
+        else if (chapter.status==='taken') this.showChapterText(chNum);
+        else alert('פרק זה כבר הושלם');
+      }
+
+      takeChapter(chapterNum){
+        const name = document.getElementById('participantName').value.trim();
+        const email = document.getElementById('participantEmail').value.trim();
+        if (!name){ alert('נא להזין שם'); return; }
+        if (!email){ alert('נא להזין דוא״ל'); return; }
+        const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)){ alert('דוא״ל לא תקין'); return; }
+
+        const campaigns = this.getCampaigns();
+        const c = campaigns[this.currentCampaignId];
+        const ch = c.chapters[chapterNum];
+
+        ch.status='taken'; ch.takenBy=name; ch.takenByEmail=email;
+        this.saveCampaigns(campaigns);
+
+        this.sendChapterTakenEmail(c, chapterNum, name, email);
+        this.displayChapters(c.chapters);
+        this.updateProgress(c.chapters);
+
+        alert(`פרק ${toHebNum(chapterNum)} נלקח בהצלחה! הטקסט יישלח לדוא״ל.`);
+        document.getElementById('participantName').value='';
+        document.getElementById('participantEmail').value='';
+      }
+
+      showChapterText(chapterNum){
+        this.currentChapterNum = chapterNum;
+        document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum)}`;
+        document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || '';
+        document.getElementById('chapterModal').classList.add('on');
+        document.getElementById('completeChapterBtn').onclick = ()=> this.completeChapter(chapterNum);
+      }
+
+      completeChapter(chapterNum){
+        const campaigns = this.getCampaigns();
+        const c = campaigns[this.currentCampaignId];
+        const ch = c.chapters[chapterNum];
+        if (ch.status!=='taken'){ alert('לא ניתן לסמן פרק שלא נלקח'); return; }
+        if (!confirm(`האם סיימת לקרוא פרק ${toHebNum(chapterNum)}?`)) return;
+
+        ch.status='completed'; ch.completedAt = new Date().toISOString();
+        this.saveCampaigns(campaigns);
+
+        this.sendChapterCompletedEmail(c, chapterNum, ch.takenBy);
+        this.displayChapters(c.chapters);
+        this.updateProgress(c.chapters);
+        this.closeChapterModal();
+        alert('תודה! הפרק סומן כמושלם.');
+      }
+
+      closeChapterModal(){ document.getElementById('chapterModal').classList.remove('on'); }
+
+      /* -------- Email -------- */
+      async sendCampaignCreatedEmail(campaign){
+        if (typeof emailjs==='undefined') return;
+        if (!this.emailConfig?.campaignCreatedTemplateId) return;
+
+        const url = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
+        const params = {
+          to_email: campaign.organizerEmail,
+          to_name: campaign.organizer,
+          from_name: 'פלטפורמת תהילים',
+          campaign_name: campaign.name,
+          campaign_url: url,
+          message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים.`,
+          subject: `קמפיין תהילים נוצר — ${campaign.name}`
+        };
+        try{
+          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params);
+        }catch(e){ console.warn('sendCampaignCreatedEmail failed', e); }
+      }
+
+      async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
+        if (typeof emailjs==='undefined' || !this.emailConfig) return;
+
+        // notify organizer
+        if (this.emailConfig.chapterCompletedTemplateId){
+          const orgParams = {
+            to_email: campaign.organizerEmail,
+            to_name: campaign.organizer,
+            from_name: 'פלטפורמת תהילים',
+            campaign_name: campaign.name,
+            chapter_number: toHebNum(chapterNum, false),
+            participant_name: userName,
+            participant_email: userEmail,
+            message: `${userName} לקח על עצמו לקרוא פרק ${toHebNum(chapterNum)} בקמפיין "${campaign.name}"`,
+            subject: `פרק נלקח — ${campaign.name}`
+          };
+          try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
+        }
+
+        // send text to participant
+        if (userEmail && this.emailConfig.chapterTakenTemplateId){
+          const userParams = {
+            to_email: userEmail,
+            to_name: userName,
+            from_name: 'פלטפורמת תהילים',
+            campaign_name: campaign.name,
+            chapter_number: toHebNum(chapterNum, false),
+            chapter_text: this.tehillimTexts[chapterNum],
+            campaign_url: `${location.origin}${location.pathname}?campaign=${campaign.id}`,
+            message: `קיבלת את פרק ${toHebNum(chapterNum)} מתהילים עבור "${campaign.name}". לאחר הקריאה, חזור לאתר וסמן השלמה.`,
+            subject: `פרק ${toHebNum(chapterNum)} — ${campaign.name}`
+          };
+          try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterTakenTemplateId, userParams); }catch(_){}
+        }
+      }
+
+      async sendChapterCompletedEmail(campaign, chapterNum, userName){
+        if (typeof emailjs==='undefined' || !this.emailConfig?.chapterCompletedTemplateId) return;
+        const params = {
+          to_name: campaign.organizer,
+          to_email: campaign.organizerEmail,
+          campaign_name: campaign.name,
+          chapter_number: toHebNum(chapterNum, false),
+          user_name: userName,
+          message: `${userName} סיים לקרוא פרק ${toHebNum(chapterNum)} בקמפיין "${campaign.name}"!`,
+          subject: `פרק הושלם — ${campaign.name}`
+        };
+        try{
+          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params);
+        }catch(e){ console.warn('sendChapterCompletedEmail failed', e); }
+      }
+
+      /* -------- Utils -------- */
+      generateId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+
+      initializeChapters(){
+        const obj = {};
+        for (let i=1;i<=150;i++){
+          obj[i] = { status:'available', takenBy:null, takenByEmail:null, completedAt:null };
+        }
+        return obj;
+      }
+
+      showCreateForm(){
+        document.getElementById('campaignSection').style.display='none';
+        document.getElementById('urlSection').style.display='none';
+        history.pushState({}, document.title, location.pathname);
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+
+      getTehillimTexts(){
+        // Placeholder until JSON is loaded; will be replaced.
+        const t = {};
+        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i)}\n(יטען מה־JSON)`;
+        return t;
+      }
+    }
+
+    /* ---------- Global helpers bound to UI ---------- */
+    function saveEmailConfig(){
+      const config = {
+        userId: document.getElementById('emailjsUserId').value.trim(),
+        serviceId: document.getElementById('emailjsServiceId').value.trim(),
+        campaignCreatedTemplateId: document.getElementById('campaignCreatedTemplateId').value.trim(),
+        chapterTakenTemplateId: document.getElementById('chapterTakenTemplateId').value.trim(),
+        chapterCompletedTemplateId: document.getElementById('chapterCompletedTemplateId').value.trim()
+      };
+      if (!config.userId || !config.serviceId || !config.campaignCreatedTemplateId || !config.chapterTakenTemplateId || !config.chapterCompletedTemplateId){
+        alert('נא למלא את כל שדות ההגדרות'); return;
+      }
+      localStorage.setItem('tehillimEmailConfig', JSON.stringify(config));
+      window.tehillimPlatform.emailConfig = config;
+      window.tehillimPlatform.initEmailJS();
+      alert('ההגדרות נשמרו');
+    }
+
+    async function testEmailConnection(){
+      if (!window.tehillimPlatform.emailConfig){ alert('אין הגדרות'); return; }
+      const to = prompt('דוא״ל לבדיקה:', 'test@example.com');
+      if (!to) return;
+      const params = {
+        to_email: to,
+        to_name: 'Test User',
+        from_name: 'פלטפורמת תהילים - Test',
+        campaign_name: 'Test',
+        campaign_url: location.href,
+        message: 'בדיקת EmailJS',
+        subject: 'Test Email - Tehillim'
+      };
+      try{
+        await emailjs.send(window.tehillimPlatform.emailConfig.serviceId, window.tehillimPlatform.emailConfig.campaignCreatedTemplateId, params);
+        alert('נשלח! בדקו את התיבה.');
+      }catch(e){ alert('כשל בשליחה: ' + (e?.text || e?.message || e)); }
+    }
+
+    function copyUrl(){
+      const url = document.getElementById('campaignUrl').textContent;
+      navigator.clipboard.writeText(url).then(()=> alert('הקישור הועתק'));
+    }
+    function goToCampaign(){
+      const c = window.tehillimPlatform.getCampaigns()[window.tehillimPlatform.currentCampaignId];
+      document.getElementById('urlSection').style.display='none';
+      window.tehillimPlatform.displayCampaign(c);
+      history.pushState({}, document.title, `${location.pathname}?campaign=${window.tehillimPlatform.currentCampaignId}`);
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    function shareUrl(){
+      const url = `${location.origin}${location.pathname}?campaign=${window.tehillimPlatform.currentCampaignId}`;
+      if (navigator.share){ navigator.share({title:'קמפיין תהילים', text:'הצטרפו לקמפיין תהילים', url}); }
+      else { navigator.clipboard.writeText(url).then(()=> alert('הקישור הועתק')); }
+    }
+    function showCreateForm(){ window.tehillimPlatform.showCreateForm(); }
+    function closeChapterModal(){ window.tehillimPlatform.closeChapterModal(); }
+
+    /* ---------- Bootstrap ---------- */
+    window.tehillimPlatform = new TehillimPlatform();
+
+    /* ---------- Load full text JSON & number פסוקים with Hebrew letters ---------- */
+    (async ()=>{
+      // Replace with your JSON if needed:
+      const jsonUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Miqra%20according%20to%20the%20Masorah.json";
+      try{
+        const res = await fetch(jsonUrl);
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const data = await res.json();
+
+        const numberVersesHeb = (arr)=>{
+          if (!Array.isArray(arr)) return String(arr||'').trim();
+          return arr.map((v,i)=>`(${toHebNum(i+1)}) ${typeof v==='string'? v.trim() : String(v||'').trim()}`).join('\n');
+        };
+
+        function parseStructure(src){
+          const out = {};
+          if (Array.isArray(src?.chapters)){
+            src.chapters.forEach((verses, idx)=> out[idx+1] = numberVersesHeb(verses));
             return out;
           }
-
-          const texts = buildTehillimFromMiqraJSON(data);
-          const count = Object.keys(texts).length;
-
-          if (count >= 150) {
-            window.tehillimPlatform.tehillimTexts = texts;
-            console.log("✅ Loaded full Tehillim with numbered פסוקים. Chapters:", count);
-
-            // If a chapter modal is open, refresh its content with numbered text
-            if (window.tehillimPlatform.currentChapterNum) {
-              const n = window.tehillimPlatform.currentChapterNum;
-              document.getElementById('chapterContent').textContent = window.tehillimPlatform.tehillimTexts[n];
-            }
-          } else {
-            console.warn("⚠️ Parsed only", count, "chapters (expected 150). Check the JSON structure.");
+          if (Array.isArray(src?.text)){
+            src.text.forEach((verses, idx)=> out[idx+1] = numberVersesHeb(verses));
+            return out;
           }
-        } catch (err) {
-          console.error("Failed to load Tehillim JSON:", err);
+          const numericKeys = Object.keys(src||{}).filter(k=>/^\d+$/.test(k));
+          if (numericKeys.length){
+            numericKeys.sort((a,b)=>+a-+b).forEach(k=> out[+k]= numberVersesHeb(src[k]));
+            return out;
+          }
+          const bookNode = src?.Psalms || src?.Tehillim || src?.psalms || src?.tehillim || src?.book || null;
+          if (bookNode) return parseStructure(bookNode);
+          return out;
         }
-      })();
-    </script>
+
+        const mapped = parseStructure(data);
+        if (Object.keys(mapped).length >= 150){
+          window.tehillimPlatform.tehillimTexts = mapped;
+          // If a modal is open, refresh with numbered text:
+          if (window.tehillimPlatform.currentChapterNum){
+            const n = window.tehillimPlatform.currentChapterNum;
+            document.getElementById('chapterContent').textContent = window.tehillimPlatform.tehillimTexts[n] || '';
+          }
+          console.log('✅ Full Tehillim loaded with Hebrew פסוק numbers.');
+        }else{
+          console.warn('⚠️ לא זוהו כל 150 הפרקים מה־JSON');
+        }
+      }catch(e){
+        console.error('טעינת JSON נכשלה', e);
+      }
+    })();
+
+    /* ---------- Populate existing campaigns on load ---------- */
+    (function initialList(){
+      window.tehillimPlatform.displayExistingCampaigns = function(){
+        const box = document.getElementById('campaignsList');
+        const campaigns = this.getCampaigns();
+        const ids = Object.keys(campaigns);
+        box.innerHTML = '';
+        if (!ids.length){
+          box.innerHTML = '<div class="muted">אין קמפיינים קיימים</div>';
+          return;
+        }
+        ids.forEach(id=>{
+          const c = campaigns[id];
+          const completed = Object.values(c.chapters).filter(x=>x.status==='completed').length;
+          const pct = Math.round(completed/150*100);
+          const el = document.createElement('div');
+          el.className = 'camp-item';
+          el.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+              <div style="font-weight:700">${c.name || 'ללא שם'}</div>
+              <div class="caption">${pct}% הושלם</div>
+            </div>
+            <div class="caption">מארגן: ${c.organizer || 'לא ידוע'} • ${completed}/150</div>
+          `;
+          el.onclick = ()=> this.loadCampaign(id);
+          box.appendChild(el);
+        });
+      };
+      window.tehillimPlatform.displayExistingCampaigns();
+    })();
+  </script>
 </body>
 </html>
