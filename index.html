@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פלטפורמת תהילים - Tehillim Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .create-section {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            direction: rtl;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+
+        .url-display {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            direction: ltr;
+            text-align: center;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .chapters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .chapter-btn {
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .chapter-btn:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .chapter-btn.taken {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .chapter-btn.completed {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e1e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .campaign-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-right: 4px solid #667eea;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .campaigns-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .campaign-item {
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .campaign-item:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        @media (max-width: 768px) {
+            .chapters-grid {
+                grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+                gap: 8px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>פלטפורמת תהילים</h1>
+            <p>יוצרים קמפיינים ומשלימים תהילים יחד</p>
+        </div>
+
+        <!-- Create Campaign Section -->
+        <div id="createSection" class="card create-section">
+            <h2>יצירת קמפיין חדש</h2>
+            <form id="campaignForm">
+                <div class="form-group">
+                    <label for="campaignName">שם הקמפיין:</label>
+                    <input type="text" id="campaignName" required placeholder="לרפואת... / לעילוי נשמת... / לזכות...">
+                </div>
+                <div class="form-group">
+                    <label for="campaignDescription">תיאור (אופציונלי):</label>
+                    <textarea id="campaignDescription" placeholder="פרטים נוספים על הקמפיין..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="organizerName">שם המארגן:</label>
+                    <input type="text" id="organizerName" required placeholder="השם שלך">
+                </div>
+                <button type="submit" class="btn">צור קמפיין</button>
+            </form>
+        </div>
+
+        <!-- Campaign URL Display -->
+        <div id="urlSection" class="card hidden">
+            <h3>קישור הקמפיין נוצר בהצלחה!</h3>
+            <div class="alert alert-success">
+                שתף את הקישור הזה עם אחרים כדי שיוכלו להצטרף לקמפיין
+            </div>
+            <div class="url-display" id="campaignUrl"></div>
+            <button class="btn btn-secondary" onclick="copyUrl()">העתק קישור</button>
+            <button class="btn" onclick="goToCampaign()">עבור לקמפיין</button>
+        </div>
+
+        <!-- Campaign View Section -->
+        <div id="campaignSection" class="card hidden">
+            <div id="campaignInfo" class="campaign-info"></div>
+            
+            <div class="progress-text" id="progressText"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <h3>בחר פרקי תהילים:</h3>
+            <div class="alert alert-info">
+                לחץ על מספר פרק כדי לקחת אותו על עצמך. לאחר שסיימת לקרוא, לחץ שוב כדי לסמן כמושלם.
+            </div>
+            <div class="chapters-grid" id="chaptersGrid"></div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="shareUrl()">שתף קמפיין</button>
+                <button class="btn" onclick="showCreateForm()">צור קמפיין חדש</button>
+            </div>
+        </div>
+
+        <!-- Existing Campaigns -->
+        <div id="existingCampaigns" class="card">
+            <h3>קמפיינים קיימים</h3>
+            <div id="campaignsList" class="campaigns-list">
+                <p>אין קמפיינים קיימים</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TehillimPlatform {
+            constructor() {
+                this.currentCampaignId = null;
+                this.init();
+            }
+
+            init() {
+                this.loadFromUrl();
+                this.displayExistingCampaigns();
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                document.getElementById('campaignForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.createCampaign();
+                });
+            }
+
+            loadFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const campaignId = urlParams.get('campaign');
+                if (campaignId) {
+                    this.loadCampaign(campaignId);
+                }
+            }
+
+            createCampaign() {
+                const name = document.getElementById('campaignName').value;
+                const description = document.getElementById('campaignDescription').value;
+                const organizer = document.getElementById('organizerName').value;
+
+                const campaignId = this.generateId();
+                const campaign = {
+                    id: campaignId,
+                    name: name,
+                    description: description,
+                    organizer: organizer,
+                    created: new Date().toISOString(),
+                    chapters: this.initializeChapters()
+                };
+
+                // Save to localStorage
+                const campaigns = this.getCampaigns();
+                campaigns[campaignId] = campaign;
+                localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
+
+                // Show URL
+                this.showCampaignUrl(campaignId);
+            }
+
+            initializeChapters() {
+                const chapters = {};
+                for (let i = 1; i <= 150; i++) {
+                    chapters[i] = {
+                        status: 'available', // available, taken, completed
+                        takenBy: null,
+                        completedAt: null
+                    };
+                }
+                return chapters;
+            }
+
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            getCampaigns() {
+                const campaigns = localStorage.getItem('tehillimCampaigns');
+                return campaigns ? JSON.parse(campaigns) : {};
+            }
+
+            showCampaignUrl(campaignId) {
+                const baseUrl = window.location.origin + window.location.pathname;
+                const campaignUrl = `${baseUrl}?campaign=${campaignId}`;
+                
+                document.getElementById('campaignUrl').textContent = campaignUrl;
+                document.getElementById('createSection').classList.add('hidden');
+                document.getElementById('urlSection').classList.remove('hidden');
+                
+                this.currentCampaignId = campaignId;
+            }
+
+            loadCampaign(campaignId) {
+                const campaigns = this.getCampaigns();
+                const campaign = campaigns[campaignId];
+
+                if (!campaign) {
+                    alert('קמפיין לא נמצא');
+                    return;
+                }
+
+                this.currentCampaignId = campaignId;
+                this.displayCampaign(campaign);
+            }
+
+            displayCampaign(campaign) {
+                document.getElementById('createSection').classList.add('hidden');
+                document.getElementById('urlSection').classList.add('hidden');
+                document.getElementById('campaignSection').classList.remove('hidden');
+
+                // Display campaign info
+                const infoDiv = document.getElementById('campaignInfo');
+                infoDiv.innerHTML = `
+                    <h2>${campaign.name}</h2>
+                    ${campaign.description ? `<p><strong>תיאור:</strong> ${campaign.description}</p>` : ''}
+                    <p><strong>מארגן:</strong> ${campaign.organizer}</p>
+                    <p><strong>נוצר:</strong> ${new Date(campaign.created).toLocaleDateString('he-IL')}</p>
+                `;
+
+                // Display chapters
+                this.displayChapters(campaign.chapters);
+                this.updateProgress(campaign.chapters);
+            }
+
+            displayChapters(chapters) {
+                const grid = document.getElementById('chaptersGrid');
+                grid.innerHTML = '';
+
+                for (let i = 1; i <= 150; i++) {
+                    const chapter = chapters[i];
+                    const btn = document.createElement('div');
+                    btn.className = `chapter-btn ${chapter.status}`;
+                    btn.textContent = i;
+                    btn.onclick = () => this.toggleChapter(i);
+                    
+                    if (chapter.status === 'taken') {
+                        btn.title = `נלקח על ידי: ${chapter.takenBy || 'אלמוני'}`;
+                    } else if (chapter.status === 'completed') {
+                        btn.title = `הושלם על ידי: ${chapter.takenBy || 'אלמוני'}`;
+                    }
+                    
+                    grid.appendChild(btn);
+                }
+            }
+
+            toggleChapter(chapterNum) {
+                const campaigns = this.getCampaigns();
+                const campaign = campaigns[this.currentCampaignId];
+                const chapter = campaign.chapters[chapterNum];
+
+                if (chapter.status === 'available') {
+                    // Take the chapter
+                    const name = prompt('הכנס את שמך:');
+                    if (name) {
+                        chapter.status = 'taken';
+                        chapter.takenBy = name;
+                    } else {
+                        return;
+                    }
+                } else if (chapter.status === 'taken') {
+                    // Complete the chapter
+                    const confirm = window.confirm(`האם סיימת לקרוא פרק ${chapterNum}?`);
+                    if (confirm) {
+                        chapter.status = 'completed';
+                        chapter.completedAt = new Date().toISOString();
+                    } else {
+                        return;
+                    }
+                } else {
+                    // Chapter is completed
+                    alert('פרק זה כבר הושלם');
+                    return;
+                }
+
+                // Save changes
+                localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
+                
+                // Refresh display
+                this.displayChapters(campaign.chapters);
+                this.updateProgress(campaign.chapters);
+            }
+
+            updateProgress(chapters) {
+                const total = 150;
+                const completed = Object.values(chapters).filter(ch => ch.status === 'completed').length;
+                const taken = Object.values(chapters).filter(ch => ch.status === 'taken').length;
+                const available = total - completed - taken;
+
+                const percentage = (completed / total) * 100;
+                
+                document.getElementById('progressFill').style.width = `${percentage}%`;
+                document.getElementById('progressText').innerHTML = `
+                    הושלמו: ${completed} | נלקחו: ${taken} | זמינים: ${available} | סה"כ: ${total} (${Math.round(percentage)}%)
+                `;
+            }
+
+            displayExistingCampaigns() {
+                const campaigns = this.getCampaigns();
+                const listDiv = document.getElementById('campaignsList');
+                
+                const campaignIds = Object.keys(campaigns);
+                if (campaignIds.length === 0) {
+                    listDiv.innerHTML = '<p>אין קמפיינים קיימים</p>';
+                    return;
+                }
+
+                listDiv.innerHTML = '';
+                campaignIds.forEach(id => {
+                    const campaign = campaigns[id];
+                    const completed = Object.values(campaign.chapters).filter(ch => ch.status === 'completed').length;
+                    const percentage = Math.round((completed / 150) * 100);
+
+                    const item = document.createElement('div');
+                    item.className = 'campaign-item';
+                    item.onclick = () => this.loadCampaign(id);
+                    item.innerHTML = `
+                        <strong>${campaign.name}</strong><br>
+                        <small>מארגן: ${campaign.organizer} | הושלמו: ${completed}/150 (${percentage}%)</small>
+                    `;
+                    listDiv.appendChild(item);
+                });
+            }
+
+            showCreateForm() {
+                document.getElementById('campaignSection').classList.add('hidden');
+                document.getElementById('urlSection').classList.add('hidden');
+                document.getElementById('createSection').classList.remove('hidden');
+                
+                // Clear URL parameter
+                window.history.pushState({}, document.title, window.location.pathname);
+            }
+        }
+
+        // Global functions
+        function copyUrl() {
+            const url = document.getElementById('campaignUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('הקישור הועתק ללוח!');
+            });
+        }
+
+        function goToCampaign() {
+            window.location.href = document.getElementById('campaignUrl').textContent;
+        }
+
+        function shareUrl() {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const url = `${baseUrl}?campaign=${window.tehillimPlatform.currentCampaignId}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'קמפיין תהילים',
+                    text: 'הצטרף אלי לקמפיין תהילים',
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('הקישור הועתק ללוח!');
+                });
+            }
+        }
+
+        // Initialize the platform
+        window.tehillimPlatform = new TehillimPlatform();
+    </script>
+</body>
+</html>
