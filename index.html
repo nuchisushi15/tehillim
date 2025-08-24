@@ -5,20 +5,132 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>פלטפורמת תהילים — קמפיינים + ניהול</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
   <style>
-    /* (same CSS as before for layout, admin log, modal, etc.) */
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --ink:#1f2937; --muted:#6b7280;
+      --brand:#6d28d9; --brand-2:#7c3aed; --accent:#10b981; --danger:#ef4444;
+      --ring:rgba(109,40,217,.18); --shadow: 0 10px 30px rgba(17,24,39,.08);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Hebrew", "Helvetica Neue", Arial;
+      background: radial-gradient(1000px 600px at 80% -200px, #ede9fe 0%, transparent 70%), var(--bg);
+      color:var(--ink);
+    }
+    /* Toasts */
+    .toasts{position:fixed; top:14px; right:14px; z-index:9999; display:grid; gap:8px}
+    .toast{background:#fff; color:#111; border:1px solid #e5e7eb; border-inline-start:4px solid var(--brand);
+      border-radius:12px; box-shadow:var(--shadow); padding:10px 12px; min-width:240px; animation:slideIn .2s ease;}
+    .toast.success{border-inline-start-color:var(--accent)}
+    .toast.error{border-inline-start-color:var(--danger)}
+    @keyframes slideIn{from{transform:translateY(-10px); opacity:.0} to{transform:translateY(0); opacity:1}}
+
+    /* Modal (generic) */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:50; }
+    .modal.on{ display:flex }
+    .backdrop{ position:absolute; inset:0; background:rgba(17,24,39,.55); backdrop-filter: blur(4px); }
+    .dialog{ position:relative; width:min(880px, 96vw); background:#fff; border-radius:16px; box-shadow: 0 20px 60px rgba(17,24,39,.35); overflow:hidden }
+    .dialog header{ padding:14px 16px; border-bottom:1px solid #eef0f6; background:#fff; display:flex; align-items:center; gap:10px }
+    .dialog .content{ padding:16px }
+    .dialog .actions{ padding:12px 16px; display:flex; gap:8px; justify-content:flex-start; border-top:1px solid #eef0f6; background:#fafafa }
+    .close-x{ position:absolute; left:12px; top:10px; background:transparent; border:0; font-size:22px; cursor:pointer }
+
+    /* App layout */
+    header.topbar{
+      position: sticky; top:0; z-index: 5; background: rgba(255,255,255,.7);
+      backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid #e5e7eb;
+    }
+    .topbar-inner{ max-width: 1200px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:16px; }
+    .brand{display:flex; align-items:center; gap:12px; font-weight:800; color:var(--brand)}
+    .brand .logo{width:36px; height:36px; border-radius:10px; background: conic-gradient(from 220deg, var(--brand), var(--brand-2)); box-shadow:0 8px 18px var(--ring)}
+    .top-actions{margin-inline-start:auto; display:flex; gap:8px}
+    .btn{
+      appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:600; cursor:pointer;
+      background:var(--brand); color:white; box-shadow: 0 6px 16px var(--ring);
+      transition: transform .06s, box-shadow .2s, background .2s;
+    }
+    .btn:hover{transform: translateY(-1px)}
+    .btn:active{transform: translateY(0)}
+    .btn.secondary{background:#111827; color:#fff}
+    .btn.ghost{background:transparent; color:var(--brand); box-shadow:none}
+    .btn.success{background:var(--accent)}
+    .btn.danger{background:var(--danger)}
+    .btn.light{background:#eef2ff; color:#4338ca}
+    .btn.small{padding:6px 10px; border-radius:10px; font-size:13px}
+
+    .shell{display:grid; grid-template-columns: 320px 1fr; min-height:100vh}
+    @media (max-width: 960px){ .shell{grid-template-columns: 1fr} }
+
+    .sidebar{
+      padding:20px; border-inline-end:1px solid #e5e7eb;
+      background:linear-gradient(180deg, rgba(124,58,237,.06), transparent 180px);
+    }
+    .card{ background:var(--card); border:1px solid #eef0f6; border-radius: var(--radius); box-shadow: var(--shadow); }
+    .panel{padding:18px}
+    .panel h3{margin:0 0 8px; font-size:18px}
+    .muted{color:var(--muted)}
+    .hr{height:1px; background:#eef0f6; margin:12px 0}
+    .form{display:grid; gap:12px}
+    .row{display:grid; gap:6px}
+    label{font-size:13px; color:#374151; font-weight:600}
+    input, textarea{
+      background:#fff; border:1.5px solid #e5e7eb; border-radius:12px; padding:12px 14px; font:inherit;
+      outline:none; transition: border .15s, box-shadow .15s;
+    }
+    textarea{min-height:84px; resize:vertical}
+    input:focus, textarea:focus{border-color:var(--brand); box-shadow: 0 0 0 4px var(--ring)}
+    .helper{font-size:12px; color:var(--muted)}
+    .campaigns{margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:40vh; overflow:auto}
+    .camp-item{padding:12px; border-radius:14px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; display:flex; flex-direction:column; gap:6px; transition: background .15s, transform .06s}
+    .camp-item:hover{background:#fafafa; transform: translateY(-1px)}
+    .caption{font-size:12px; color:var(--muted)}
+
+    .main{padding:24px; max-width: 1000px; width:100%}
+    .hero{display:flex; flex-direction:column; gap:10px; margin-bottom:18px}
+    .info-banner{padding:14px; border-radius:14px; background:#f0fdfa; border:1px solid #ccfbf1; color:#065f46}
+
+    .copybar{display:flex; gap:8px; align-items:center; padding:12px; border:1px dashed #c7d2fe; background:#f5f3ff; border-radius:14px; margin-bottom:12px}
+    .urlbox{direction:ltr; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; overflow:auto}
+
+    .grid{display:grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap:10px}
+    .chip{user-select:none; text-align:center; padding:12px 6px; border-radius:14px; border:1.5px solid #e5e7eb; background:#fff; font-weight:800; letter-spacing:.3px; transition: transform .06s, border .15s, background .15s, color .15s; cursor:pointer}
+    .chip:hover{transform: translateY(-1px); border-color:var(--brand)}
+    .chip.taken{background:#eef2ff; border-color:#c7d2fe; color:#4338ca}
+    .chip.completed{background:#e5efe7; border-color:#a7f3d0; color:#065f46}
+
+    .progress{display:flex; align-items:center; gap:14px; margin:14px 0 8px}
+    .bar{flex:1; height:14px; background:#eef0f6; border-radius:999px; overflow:hidden}
+    .fill{height:100%; width:0; background:linear-gradient(90deg, var(--accent), #34d399); transition: width .45s ease}
+    .section{margin-top:18px}
+    .stack{display:grid; gap:12px}
+
+    /* Admin table */
+    .admin-grid{display:grid; gap:10px}
+    .admin-row{display:grid; grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr auto; gap:8px; align-items:center; padding:8px; border:1px solid #e5e7eb; border-radius:12px}
+    .admin-head{font-size:12px; color:#6b7280; display:grid; grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr auto; gap:8px; padding:6px 8px}
+    .admin-actions{display:flex; gap:6px; justify-content:flex-start}
+    .toolbar{display:flex; gap:8px; align-items:center; margin:8px 0 12px}
+    .input-sm{padding:8px 10px; border-radius:10px; border:1px solid #e5e7eb; outline:none}
+    @media (max-width: 860px){
+      .admin-row, .admin-head{grid-template-columns: 1fr; gap:6px}
+      .admin-actions{justify-content:flex-start}
+    }
   </style>
 </head>
+
 <body>
-  <!-- Toasts -->
+  <!-- Toast container -->
   <div id="toasts" class="toasts" aria-live="polite"></div>
 
-  <!-- Chapter Modal -->
-  <div id="chapterModal" class="modal">
+  <!-- Chapter modal -->
+  <div id="chapterModal" class="modal" role="dialog" aria-modal="true">
     <div class="backdrop" onclick="closeChapterModal()"></div>
     <div class="dialog" style="width:min(720px, 92vw)">
       <header>
-        <button class="close-x" onclick="closeChapterModal()">×</button>
+        <button class="close-x" onclick="closeChapterModal()" aria-label="סגור">×</button>
         <h3 id="chapterTitle" style="margin:0"></h3>
       </header>
       <div id="chapterContent" class="content" style="white-space:pre-wrap; line-height:2; font-size:18px"></div>
@@ -29,33 +141,37 @@
     </div>
   </div>
 
-  <!-- Admin Modal -->
-  <div id="adminModal" class="modal">
+  <!-- Admin modal -->
+  <div id="adminModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
     <div class="backdrop" onclick="closeAdmin()"></div>
     <div class="dialog">
       <header>
-        <h3>ניהול קמפיינים</h3>
-        <button class="close-x" onclick="closeAdmin()">×</button>
+        <h3 id="adminTitle" style="margin:0">ניהול קמפיינים</h3>
+        <button class="close-x" onclick="closeAdmin()" aria-label="סגור">×</button>
       </header>
       <div class="content">
         <div class="toolbar">
-          <input id="adminSearch" class="input-sm" placeholder="חיפוש בשם/מארגן…" oninput="renderAdminList()">
-          <input id="openById" class="input-sm" placeholder="פתח לפי מזהה קמפיין">
+          <input id="adminSearch" class="input-sm" placeholder="חיפוש בשם/מארגן/מייל…" oninput="renderAdminList()" style="min-width:220px">
+          <input id="openById" class="input-sm" placeholder="פתח לפי מזהה קמפיין (ID)" style="min-width:220px">
           <button class="btn small light" onclick="openCampaignById()">פתח</button>
           <span style="flex:1"></span>
-          <button class="btn small" onclick="exportCampaigns()">ייצוא</button>
-          <label class="btn small ghost">
-            ייבוא <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importCampaigns(event)">
+          <button class="btn small" onclick="exportCampaigns()">ייצוא JSON</button>
+          <label class="btn small ghost" style="cursor:pointer">
+            ייבוא JSON
+            <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importCampaigns(event)">
           </label>
         </div>
-        <div class="admin-head"><div>שם</div><div>תיאור</div><div>מארגן</div><div>מייל</div><div>פעולות</div></div>
+        <div class="admin-head">
+          <div>שם</div><div>תיאור</div><div>מארגן</div><div>מייל</div><div>פעולות</div>
+        </div>
         <div id="adminList" class="admin-grid"></div>
       </div>
-      <div class="actions"><button class="btn ghost" onclick="closeAdmin()">סגור</button></div>
+      <div class="actions">
+        <button class="btn ghost" onclick="closeAdmin()">סגור</button>
+      </div>
     </div>
   </div>
 
-  <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand"><div class="logo"></div> פלטפורמת תהילים</div>
@@ -66,73 +182,681 @@
     </div>
   </header>
 
-  <!-- Shell -->
   <div class="shell">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="card panel">
         <h3>יצירת קמפיין</h3>
+        <p class="muted">בחר שם, הזן פרטי מארגן, וקבל קישור לשיתוף.</p>
+        <div class="hr"></div>
         <form id="campaignForm" class="form">
-          <div class="row"><label>שם</label><input id="campaignName" required></div>
-          <div class="row"><label>תיאור</label><textarea id="campaignDescription"></textarea></div>
-          <div class="row"><label>מארגן</label><input id="organizerName" required></div>
-          <div class="row"><label>מייל</label><input id="organizerEmail" type="email" required></div>
+          <div class="row">
+            <label for="campaignName">שם הקמפיין</label>
+            <input id="campaignName" type="text" placeholder="לרפואת... / לע״נ... / לזכות..." required />
+          </div>
+          <div class="row">
+            <label for="campaignDescription">תיאור (אופציונלי)</label>
+            <textarea id="campaignDescription" placeholder="פרטים נוספים על הקמפיין..."></textarea>
+          </div>
+          <div class="row">
+            <label for="organizerName">שם המארגן</label>
+            <input id="organizerName" type="text" required />
+          </div>
+          <div class="row">
+            <label for="organizerEmail">מייל המארגן</label>
+            <input id="organizerEmail" type="email" placeholder="name@email.com" required />
+            <div class="helper">ישלח לשם קישור לניהול הקמפיין</div>
+          </div>
           <button class="btn" type="submit">צור קמפיין</button>
         </form>
       </div>
+
       <div class="card panel" style="margin-top:14px">
-        <h3>קמפיינים אחרונים</h3>
-        <div id="campaignsList" class="campaigns"><div class="muted">אין קמפיינים</div></div>
+        <h3>קמפיינים (24 שעות אחרונות)</h3>
+        <div id="campaignsList" class="campaigns">
+          <div class="muted">אין קמפיינים קיימים</div>
+        </div>
       </div>
     </aside>
 
     <!-- Main -->
     <main class="main">
+      <div class="hero">
+        <h2>קמפיין תהילים</h2>
+        <div class="info-banner">
+          <b>איך זה עובד?</b> יוצרים קמפיין, משתפים את הקישור, לוחצים על פרק: אם הוא פנוי — הוא נתפס מיד, הטקסט נפתח, ובסוף מסמנים “סיימתי”.
+        </div>
+      </div>
+
+      <!-- Campaign View -->
       <section id="campaignSection" class="card panel" style="display:none">
+        <!-- Copy bar appears after create/load -->
         <div id="copyBar" class="copybar" style="display:none">
-          <div id="campaignUrl" class="urlbox" style="flex:1"></div>
+          <div class="urlbox" id="campaignUrl" style="flex:1"></div>
           <button class="btn light" onclick="copyUrl()">העתק קישור</button>
         </div>
+
         <div id="campaignInfo" class="stack"></div>
-        <div class="card panel" style="background:#faf5ff;margin-top:10px">
+
+        <div class="card panel" style="background:#faf5ff; border-color:#e9d5ff; margin-top:10px">
           <h3>לפני נטילת פרק</h3>
-          <input id="participantName" placeholder="שם מלא">
-          <input id="participantEmail" type="email" placeholder="email">
+          <div class="stack">
+            <div class="row">
+              <label for="participantName">שמך</label>
+              <input id="participantName" type="text" placeholder="שם מלא">
+            </div>
+            <div class="row">
+              <label for="participantEmail">דוא״ל</label>
+              <input id="participantEmail" type="email" placeholder="name@email.com">
+            </div>
+            <div class="helper">לאחר מילוי הפרטים, לחץ על אות פרק לבחירה</div>
+          </div>
         </div>
+
         <div class="progress">
-          <div id="progressText"></div>
+          <div id="progressText" class="muted"></div>
           <div class="bar"><div id="progressFill" class="fill"></div></div>
         </div>
-        <div class="section"><h3>בחרו פרקים</h3><div id="chaptersGrid" class="grid"></div></div>
+
+        <div class="section">
+          <h3>בחרו פרקי תהילים</h3>
+          <div id="chaptersGrid" class="grid" style="margin-top:10px"></div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:14px">
+          <button class="btn secondary" onclick="shareUrl()">שיתוף קמפיין</button>
+          <button class="btn ghost" onclick="showCreateForm()">קמפיין חדש</button>
+        </div>
       </section>
     </main>
   </div>
 
   <script>
-    /* helper functions showToast, toHebNum, TehillimPlatform, Admin Log etc.
-       (same as before, omitted here for brevity — keep the version you already have!) */
-  </script>
+    /* ---------- Toasts ---------- */
+    function showToast(msg, type='info', timeout=3500){
+      const wrap = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = 'toast ' + (type==='success'?'success': type==='error'?'error':'');
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(()=> { el.style.opacity = '0'; el.style.transform='translateY(-6px)'; setTimeout(()=> el.remove(), 200); }, timeout);
+    }
 
-  <!-- 🔄 Updated Sefaria loader -->
-  <script>
-    const _psalmsCache = new Map();
+    /* ---------- Hebrew numerals ---------- */
+    const H_UNITS = {1:'א',2:'ב',3:'ג',4:'ד',5:'ה',6:'ו',7:'ז',8:'ח',9:'ט'};
+    const H_TENS = {10:'י',20:'כ',30:'ל',40:'מ',50:'נ',60:'ס',70:'ע',80:'פ',90:'צ'};
+    const H_HUND = {100:'ק',200:'ר',300:'ש',400:'ת'};
+    function toHebNum(n, punctuation=true){
+      let result = '';
+      let num = n;
+      [400,300,200,100].forEach(h=>{ while(num>=h){ result += H_HUND[h]; num -= h; } });
+      if (num === 15){ result += 'טו'; num = 0; }
+      else if (num === 16){ result += 'טז'; num = 0; }
+      else{ [90,80,70,60,50,40,30,20,10].forEach(t=>{ while(num>=t){ result += H_TENS[t]; num -= t; } }); }
+      if (num>0) result += H_UNITS[num] || '';
+      if (!punctuation) return result;                   // chapter buttons: no ׳/״
+      if (result.length >= 2){ return result.slice(0,-1) + '״' + result.slice(-1); }
+      if (result.length === 1){ return result + '׳'; }
+      return result;
+    }
 
-    async function fetchChapterFromSefaria(chNum){
-      if (_psalmsCache.has(chNum)) return _psalmsCache.get(chNum);
-      const url = `https://www.sefaria.org/api/texts/Psalms.${chNum}?lang=he&commentary=0`;
-      const res = await fetch(url, {mode:'cors'});
-      if (!res.ok) throw new Error('HTTP '+res.status);
-      const data = await res.json();
-      const verses = Array.isArray(data.he) ? data.he : [];
+    /* ---------- Platform ---------- */
+    class TehillimPlatform {
+      constructor(){
+        this.currentCampaignId = null;
+        this.currentChapterNum = null;
+        this.emailConfig = null;
+        this.tehillimTexts = this.getTehillimTexts(); // placeholders (Sefaria replaces on demand)
+        this.init();
+      }
 
-      const clean = verses.map((v,i)=>{
-        let text = v.replace(/<[^>]+>/g,'').trim();   // remove tags
-        text = text.replace(/\s+/g,' ');              // collapse spaces
-        return `(${toHebNum(i+1,false)}) ${text}`;
+      init(){
+        this.loadEmailConfig();
+        if (typeof emailjs !== 'undefined') this.initEmailJS();
+        this.setupEventListeners();
+        this.loadFromUrl();
+        this.displayExistingCampaigns();
+        // cross-tab sync
+        window.addEventListener('storage', (e)=>{
+          if (e.key === 'tehillimCampaigns'){ this.displayExistingCampaigns(); if (this.currentCampaignId){ this.loadCampaign(this.currentCampaignId, {showCopyBar:true}); } }
+        });
+      }
+
+      setupEventListeners(){
+        document.getElementById('campaignForm').addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          await this.createCampaign();
+        });
+        window.addEventListener('keydown', (e)=>{ if (e.key==='Escape') this.closeChapterModal(); });
+      }
+
+      loadEmailConfig(){
+        // Auto-config (no manual UI)
+        const def = {
+          userId: 'd_LsqV-KBZuAeuCjf',
+          serviceId: 'service_p76h23d',
+          campaignCreatedTemplateId: 'template_0hmmrlk',
+          chapterTakenTemplateId: 'template_swui2zf',
+          chapterCompletedTemplateId: 'template_j01dkdf'
+        };
+        const saved = localStorage.getItem('tehillimEmailConfig');
+        this.emailConfig = saved ? {...def, ...JSON.parse(saved)} : def;
+        if (!saved) localStorage.setItem('tehillimEmailConfig', JSON.stringify(def));
+      }
+
+      initEmailJS(){
+        try{ emailjs.init(this.emailConfig.userId); }
+        catch(_){ try{ emailjs.init({ publicKey: this.emailConfig.userId }); } catch(e){ console.error(e); } }
+      }
+
+      /* -------- Routing -------- */
+      loadFromUrl(){
+        const urlParams = new URLSearchParams(location.search);
+        const campaignId = urlParams.get('campaign');
+        if (campaignId){
+          const campaigns = this.getCampaigns();
+          if (!campaigns[campaignId]){
+            showToast('הקמפיין לא נמצא באחסון בדפדפן זה. פתח את "ניהול" כדי לייבא/לערוך.', 'error', 5000);
+          }
+          this.loadCampaign(campaignId, {showCopyBar:true});
+        }
+      }
+
+      /* -------- Campaigns -------- */
+      getCampaigns(){
+        const data = localStorage.getItem('tehillimCampaigns');
+        return data ? JSON.parse(data) : {};
+      }
+      saveCampaigns(c){
+        localStorage.setItem('tehillimCampaigns', JSON.stringify(c));
+        // force storage event to self in some browsers (noop write)
+        localStorage.setItem('tehillimCampaigns_lastWrite', Date.now().toString());
+      }
+
+      async createCampaign(){
+        const name = document.getElementById('campaignName').value.trim();
+        const description = document.getElementById('campaignDescription').value.trim();
+        const organizer = document.getElementById('organizerName').value.trim();
+        const organizerEmail = document.getElementById('organizerEmail').value.trim();
+        if (!name || !organizer || !organizerEmail){ showToast('נא למלא את כל השדות', 'error'); return; }
+
+        const id = this.generateId();
+        const campaign = {
+          id, name, description, organizer, organizerEmail,
+          created: new Date().toISOString(),
+          chapters: this.initializeChapters()
+        };
+        const campaigns = this.getCampaigns();
+        campaigns[id] = campaign;
+        this.saveCampaigns(campaigns);
+
+        // Verify persisted (helps when opening new tab)
+        const verify = this.getCampaigns()[id];
+        if (!verify){ showToast('שגיאה בשמירת הקמפיין', 'error'); return; }
+
+        // Send email (non-blocking)
+        this.sendCampaignCreatedEmail(campaign);
+
+        // Auto-navigate to campaign with copy bar visible
+        this.navigateToCampaign(id, {showCopyBar:true});
+        document.getElementById('campaignForm').reset();
+        this.displayExistingCampaigns();
+        showToast('קמפיין נוצר בהצלחה', 'success');
+      }
+
+      navigateToCampaign(id, {showCopyBar=false}={}){
+        const base = location.origin + location.pathname;
+        const url = `${base}?campaign=${id}`;
+        history.pushState({}, document.title, url);
+        const urlBox = document.getElementById('campaignUrl');
+        urlBox.textContent = url;
+        document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
+        this.loadCampaign(id, {showCopyBar});
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+
+      loadCampaign(id, {showCopyBar=false}={}){
+        const campaigns = this.getCampaigns();
+        const c = campaigns[id];
+        if (!c){ 
+          // keep section open with copy bar (if URL contains campaign)
+          document.getElementById('campaignSection').style.display='';
+          this.currentCampaignId = null;
+          document.getElementById('campaignInfo').innerHTML = `<div class="muted">קמפיין לא נמצא באחסון מקומי. אפשר <b>לייבא</b> מהניהול או ליצור חדש.</div>`;
+          document.getElementById('chaptersGrid').innerHTML = '';
+          document.getElementById('progressText').textContent = '';
+          document.getElementById('progressFill').style.width = '0%';
+          return;
+        }
+        this.currentCampaignId = id;
+        this.displayCampaign(c, {showCopyBar});
+      }
+
+      displayCampaign(campaign, {showCopyBar=false}={}){
+        const section = document.getElementById('campaignSection');
+        section.style.display = '';
+
+        // Copy bar
+        const base = location.origin + location.pathname;
+        const url = `${base}?campaign=${campaign.id}`;
+        const urlBox = document.getElementById('campaignUrl');
+        urlBox.textContent = url;
+        document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
+
+        const info = document.getElementById('campaignInfo');
+        info.innerHTML = `
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <h3 style="margin:0">${campaign.name}</h3>
+            <span style="display:inline-flex;padding:6px 10px;border-radius:999px;background:#f5f3ff;color:#4c1d95;border:1px solid #ddd6fe">
+              נוצר: ${new Date(campaign.created).toLocaleDateString('he-IL')}
+            </span>
+          </div>
+          ${campaign.description ? `<div class="muted">${campaign.description}</div>` : ''}
+          <div class="muted">מארגן: <b>${campaign.organizer}</b> • <span>${campaign.organizerEmail}</span></div>
+        `;
+
+        this.displayChapters(campaign.chapters);
+        this.updateProgress(campaign.chapters);
+      }
+
+      displayChapters(chapters){
+        const grid = document.getElementById('chaptersGrid');
+        grid.innerHTML = '';
+        for (let i=1;i<=150;i++){
+          const ch = chapters[i];
+          const div = document.createElement('div');
+          div.className = `chip ${ch.status}`;
+          div.textContent = toHebNum(i, false); // no ׳/״
+          if (ch.status==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
+          if (ch.status==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
+          div.onclick = ()=> this.handleChapterClick(i);
+          grid.appendChild(div);
+        }
+      }
+
+      updateProgress(chapters){
+        const total = 150;
+        const taken = Object.values(chapters).filter(ch => ch.status!=='available').length;
+        const available = total - taken;
+        const pct = Math.round((taken/total)*100);
+        document.getElementById('progressText').textContent = `נלקחו: ${toHebNum(taken, false)} | זמינים: ${toHebNum(available, false)} | סה״כ: ${toHebNum(total, false)} (${pct}%)`;
+        document.getElementById('progressFill').style.width = `${pct}%`;
+      }
+
+      /* --------- SIMPLIFIED CLICK FLOW --------- */
+      async handleChapterClick(chapterNum){
+        const campaigns = this.getCampaigns();
+        const c = campaigns[this.currentCampaignId];
+        if (!c){ showToast('אין קמפיין פתוח', 'error'); return; }
+        const chapter = c.chapters[chapterNum];
+
+        // Available → take immediately
+        if (chapter.status === 'available'){
+          const name = document.getElementById('participantName').value.trim();
+          const email = document.getElementById('participantEmail').value.trim();
+          if (!name || !email){ showToast('נא להזין שם ודוא״ל לפני בחירת פרק', 'error'); return; }
+          const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)){ showToast('דוא״ל לא תקין', 'error'); return; }
+
+          chapter.status='taken';
+          chapter.takenBy=name;
+          chapter.takenByEmail=email;
+          this.saveCampaigns(campaigns);
+
+          fetchChapterFromSefaria(chapterNum).catch(()=>{});
+          this.displayChapters(c.chapters);
+          this.updateProgress(c.chapters);
+          showToast(`פרק ${toHebNum(chapterNum,false)} נלקח`, 'success');
+
+          this.openChapterActionModal(chapterNum, {mode:'taken'});
+          this.sendChapterTakenEmail(c, chapterNum, name, email);
+          return;
+        }
+
+        // Taken → open with a single “סיימתי” button
+        if (chapter.status === 'taken'){
+          this.openChapterActionModal(chapterNum, {mode:'taken'});
+          return;
+        }
+
+        // Completed → open read-only
+        this.openChapterActionModal(chapterNum, {mode:'completed'});
+      }
+
+      async openChapterActionModal(chapterNum, {mode}={}){
+        this.currentChapterNum = chapterNum;
+        document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum,false)}`;
+        document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || 'טוען טקסט...';
+        document.getElementById('chapterModal').classList.add('on');
+
+        try{
+          const t = await fetchChapterFromSefaria(chapterNum);
+          document.getElementById('chapterContent').textContent = t;
+        }catch(e){
+          showToast('שגיאה בטעינת הטקסט מסֶפַרְיָה', 'error');
+          console.error(e);
+        }
+
+        const finishBtn = document.getElementById('finishChapterBtn');
+        if (mode==='taken'){
+          finishBtn.style.display='';
+          finishBtn.onclick = ()=> this.completeChapter(chapterNum);
+        } else {
+          finishBtn.style.display='none';
+          finishBtn.onclick = null;
+        }
+      }
+
+      async completeChapter(chapterNum){
+        const campaigns = this.getCampaigns();
+        const c = campaigns[this.currentCampaignId];
+        const ch = c?.chapters?.[chapterNum];
+        if (!ch){ showToast('קמפיין לא נטען', 'error'); return; }
+        if (ch.status === 'available'){ showToast('לא ניתן לסמן פרק שלא נלקח', 'error'); return; }
+
+        ch.status='completed';
+        ch.completedAt = new Date().toISOString();
+        this.saveCampaigns(campaigns);
+
+        this.sendChapterCompletedEmail(c, chapterNum, ch.takenBy || 'משתתף');
+        this.displayChapters(c.chapters);
+        this.updateProgress(c.chapters);
+        this.closeChapterModal();
+        showToast('תודה! הפרק סומן כמושלם.', 'success');
+      }
+
+      closeChapterModal(){ document.getElementById('chapterModal').classList.remove('on'); }
+
+      /* -------- Email -------- */
+      async sendCampaignCreatedEmail(campaign){
+        if (typeof emailjs==='undefined') return;
+        if (!this.emailConfig?.campaignCreatedTemplateId) return;
+        const url = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
+        const params = {
+          to_email: campaign.organizerEmail, to_name: campaign.organizer, from_name: 'פלטפורמת תהילים',
+          campaign_name: campaign.name, campaign_url: url,
+          message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים.`,
+          subject: `קמפיין תהילים נוצר — ${campaign.name}`
+        };
+        try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params);
+          showToast('המייל עם הקישור נשלח', 'success');
+        }catch(e){ showToast('שליחת המייל נכשלה', 'error'); console.warn(e); }
+      }
+
+      async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
+        if (typeof emailjs==='undefined' || !this.emailConfig) return;
+        try { await fetchChapterFromSefaria(chapterNum); } catch(_) {}
+        let chapterText = (this.tehillimTexts?.[chapterNum] || '').trim();
+        if (!chapterText || /יטען מה|יטען מס/.test(chapterText)) {
+          chapterText = `תהילים — פרק ${toHebNum(chapterNum,false)}\n(לצפייה בטקסט המלא היכנסו לקישור הקמפיין)`;
+        }
+        // Organizer notice
+        if (this.emailConfig.chapterCompletedTemplateId){
+          const orgParams = {
+            to_email: campaign.organizerEmail, to_name: campaign.organizer, from_name: 'פלטפורמת תהילים',
+            campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
+            participant_name: userName, participant_email: userEmail,
+            message: `${userName} לקח על עצמו לקרוא פרק ${toHebNum(chapterNum,false)} בקמפיין "${campaign.name}"`,
+            subject: `פרק נלקח — ${campaign.name}`
+          };
+          try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
+        }
+        // Participant text
+        if (userEmail && this.emailConfig.chapterTakenTemplateId){
+          const campaignUrl = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
+          const userParams = {
+            to_email: userEmail, to_name: userName, from_name: 'פלטפורמת תהילים',
+            campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false), chapter_text: chapterText,
+            campaign_url: campaignUrl, message: `קיבלת את פרק ${toHebNum(chapterNum,false)} מתהילים עבור "${campaign.name}". לאחר הקריאה, חזור לאתר וסמן השלמה.`,
+            subject: `פרק ${toHebNum(chapterNum,false)} — ${campaign.name}`
+          };
+          try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterTakenTemplateId, userParams);
+            showToast('טקסט הפרק נשלח בדוא״ל', 'success');
+          }catch(e){ showToast('שליחת טקסט הפרק נכשלה', 'error'); }
+        }
+      }
+
+      async sendChapterCompletedEmail(campaign, chapterNum, userName){
+        if (typeof emailjs==='undefined' || !this.emailConfig?.chapterCompletedTemplateId) return;
+        const params = {
+          to_name: campaign.organizer, to_email: campaign.organizerEmail,
+          campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
+          user_name: userName, message: `${userName} סיים לקרוא פרק ${toHebNum(chapterNum,false)} בקמפיין "${campaign.name}"!`,
+          subject: `פרק הושלם — ${campaign.name}`
+        };
+        try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params);
+          showToast('המארגן קיבל עדכון על הסיום', 'success');
+        }catch(e){ showToast('שליחת עדכון הסיום נכשלה', 'error'); }
+      }
+
+      /* -------- Utils -------- */
+      generateId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+      initializeChapters(){
+        const obj = {};
+        for (let i=1;i<=150;i++){
+          obj[i] = { status:'available', takenBy:null, takenByEmail:null, completedAt:null };
+        }
+        return obj;
+      }
+      showCreateForm(){
+        document.getElementById('campaignSection').style.display='none';
+        history.pushState({}, document.title, location.pathname);
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+      getTehillimTexts(){
+        const t = {};
+        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i,false)}\n(יטען מסֶפַרְיָה בעת הצורך)`;
+        return t;
+      }
+
+      /* list only campaigns from last 24 hours (older remain via link) */
+      displayExistingCampaigns(){
+        const box = document.getElementById('campaignsList');
+        const campaigns = this.getCampaigns();
+        const ids = Object.keys(campaigns);
+        box.innerHTML = '';
+        if (!ids.length){
+          box.innerHTML = '<div class="muted">אין קמפיינים קיימים</div>';
+          return;
+        }
+        const now = Date.now();
+        const DAY = 24*60*60*1000;
+        const recent = ids.filter(id=>{
+          const createdMs = new Date(campaigns[id].created).getTime();
+          return (now - createdMs) <= DAY;
+        });
+
+        if (!recent.length){
+          box.innerHTML = '<div class="muted">אין קמפיינים מה-24 שעות האחרונות</div>';
+          return;
+        }
+
+        recent.forEach(id=>{
+          const c = campaigns[id];
+          const completed = Object.values(c.chapters).filter(x=>x.status==='completed').length;
+          const pct = Math.round(completed/150*100);
+          const el = document.createElement('div');
+          el.className = 'camp-item';
+          el.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+              <div style="font-weight:700">${c.name || 'ללא שם'}</div>
+              <div class="caption">${pct}% הושלם</div>
+            </div>
+            <div class="caption">מארגן: ${c.organizer || 'לא ידוע'} • ${completed}/150</div>
+          `;
+          el.onclick = ()=> this.navigateToCampaign(id, {showCopyBar:true});
+          box.appendChild(el);
+        });
+      }
+    }
+
+    /* Global helpers used by UI buttons */
+    function copyUrl(){
+      const url = document.getElementById('campaignUrl').textContent;
+      navigator.clipboard.writeText(url).then(()=> showToast('הקישור הועתק', 'success'));
+    }
+    function shareUrl(){
+      const url = document.getElementById('campaignUrl').textContent;
+      if (navigator.share){ navigator.share({title:'קמפיין תהילים', text:'הצטרפו לקמפיין תהילים', url}); }
+      else { navigator.clipboard.writeText(url).then(()=> showToast('הקישור הועתק', 'success')); }
+    }
+    function showCreateForm(){ window.tehillimPlatform.showCreateForm(); }
+    function closeChapterModal(){ window.tehillimPlatform.closeChapterModal(); }
+
+    /* Bootstrap */
+    window.tehillimPlatform = new TehillimPlatform();
+
+    /* ---------- Admin Log ---------- */
+    function openAdmin(){
+      document.getElementById('adminModal').classList.add('on');
+      document.getElementById('adminSearch').value = '';
+      renderAdminList();
+    }
+    function closeAdmin(){ document.getElementById('adminModal').classList.remove('on'); }
+
+    function renderAdminList(){
+      const list = document.getElementById('adminList');
+      list.innerHTML = '';
+      const search = (document.getElementById('adminSearch').value || '').toLowerCase().trim();
+      const campaigns = window.tehillimPlatform.getCampaigns();
+      const ids = Object.keys(campaigns).sort((a,b)=> (new Date(campaigns[b].created)) - (new Date(campaigns[a].created)));
+
+      const filtered = ids.filter(id=>{
+        const c = campaigns[id];
+        if (!search) return true;
+        return [c.name, c.organizer, c.organizerEmail, c.description].some(x=> (x||'').toLowerCase().includes(search));
       });
 
-      const text = clean.join('\n');
+      if (!filtered.length){
+        list.innerHTML = `<div class="muted">אין תוצאות</div>`;
+        return;
+      }
+
+      filtered.forEach(id=>{
+        const c = campaigns[id];
+        const row = document.createElement('div');
+        row.className = 'admin-row';
+        row.innerHTML = `
+          <input class="input-sm" value="${escapeAttr(c.name||'')}" data-field="name">
+          <input class="input-sm" value="${escapeAttr(c.description||'')}" data-field="description">
+          <input class="input-sm" value="${escapeAttr(c.organizer||'')}" data-field="organizer">
+          <input class="input-sm" value="${escapeAttr(c.organizerEmail||'')}" data-field="organizerEmail">
+          <div class="admin-actions">
+            <button class="btn small light" data-action="copy">קישור</button>
+            <button class="btn small success" data-action="save">שמור</button>
+            <button class="btn small ghost" data-action="open">פתח</button>
+            <button class="btn small danger" data-action="delete">מחק</button>
+          </div>
+        `;
+        // attach handlers
+        row.querySelector('[data-action="save"]').onclick = ()=>{
+          const inputs = row.querySelectorAll('input[data-field]');
+          inputs.forEach(inp=>{
+            const f = inp.getAttribute('data-field');
+            c[f] = inp.value.trim();
+          });
+          const all = window.tehillimPlatform.getCampaigns();
+          all[id] = c;
+          window.tehillimPlatform.saveCampaigns(all);
+          showToast('נשמר', 'success');
+          // refresh visible page if editing current campaign
+          if (window.tehillimPlatform.currentCampaignId === id){
+            window.tehillimPlatform.displayCampaign(c, {showCopyBar:true});
+          }
+        };
+        row.querySelector('[data-action="open"]').onclick = ()=>{
+          closeAdmin();
+          window.tehillimPlatform.navigateToCampaign(id, {showCopyBar:true});
+        };
+        row.querySelector('[data-action="delete"]').onclick = async ()=>{
+          if (!confirm('למחוק את הקמפיין לצמיתות?')) return;
+          const all = window.tehillimPlatform.getCampaigns();
+          delete all[id];
+          window.tehillimPlatform.saveCampaigns(all);
+          if (window.tehillimPlatform.currentCampaignId === id){
+            window.tehillimPlatform.currentCampaignId = null;
+            document.getElementById('campaignSection').style.display='none';
+            history.pushState({}, document.title, location.pathname);
+          }
+          renderAdminList();
+          window.tehillimPlatform.displayExistingCampaigns();
+          showToast('נמחק', 'success');
+        };
+        row.querySelector('[data-action="copy"]').onclick = ()=>{
+          const url = `${location.origin}${location.pathname}?campaign=${id}`;
+          navigator.clipboard.writeText(url).then(()=> showToast('קישור הועתק', 'success'));
+        };
+        list.appendChild(row);
+      });
+    }
+
+    function escapeAttr(s){
+      return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    }
+
+    function openCampaignById(){
+      const id = (document.getElementById('openById').value || '').trim();
+      if (!id){ showToast('הזן מזהה קמפיין', 'error'); return; }
+      const campaigns = window.tehillimPlatform.getCampaigns();
+      if (!campaigns[id]){ showToast('לא נמצא באחסון מקומי. שקול ייבוא JSON.', 'error'); return; }
+      closeAdmin();
+      window.tehillimPlatform.navigateToCampaign(id, {showCopyBar:true});
+    }
+
+    function exportCampaigns(){
+      const data = window.tehillimPlatform.getCampaigns();
+      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'tehillim-campaigns.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importCampaigns(evt){
+      const file = evt.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const json = JSON.parse(reader.result);
+          const current = window.tehillimPlatform.getCampaigns();
+          const merged = {...current, ...json};
+          window.tehillimPlatform.saveCampaigns(merged);
+          renderAdminList();
+          window.tehillimPlatform.displayExistingCampaigns();
+          showToast('ייבוא הושלם', 'success');
+        }catch(e){
+          showToast('קובץ לא חוקי', 'error');
+        }
+        evt.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+  </script>
+
+  <!-- 🔄 Sefaria loader: fetches a single פרק on demand; no API key needed -->
+  <script>
+    // Simple in-memory cache
+    const _psalmsCache = new Map();
+
+    // Fetch one chapter from Sefaria — returns numbered פסוקים as a single string
+    async function fetchChapterFromSefaria(chNum){
+      if (_psalmsCache.has(chNum)) return _psalmsCache.get(chNum);
+
+      const url = `https://www.sefaria.org/api/texts/Psalms.${chNum}?lang=he&commentary=0`;
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) throw new Error('Sefaria HTTP ' + res.status);
+      const data = await res.json();
+
+      const verses = Array.isArray(data.he) ? data.he : [];
+      const numbered = verses
+        .map((line, i) => `(${toHebNum(i+1)}) ${String(line || '').trim()}`)
+        .join('\n');
+
+      const text = numbered || `פרק ${toHebNum(chNum,false)} — לא נמצא טקסט`;
       _psalmsCache.set(chNum, text);
+
+      // also update the platform store so UI/email sees it
       if (window.tehillimPlatform){
         window.tehillimPlatform.tehillimTexts[chNum] = text;
       }
