@@ -250,6 +250,7 @@
             text-align: right;
             line-height: 2;
             font-size: 18px;
+            white-space: pre-wrap; /* keep line breaks for פסוקים */
         }
 
         .modal {
@@ -1102,41 +1103,30 @@
 יְהוָה יִשְׁמָרְךָ מִכָּל רָע יִשְׁמֹר אֶת נַפְשֶׁךָ:
 יְהוָה יִשְׁמָר צֵאתְךָ וּבוֹאֶךָ מֵעַתָּה וְעַד עוֹלָם:`;
 
-                // For the remaining chapters, provide instructions and a few more examples
+                // A couple more examples
                 const popularChapters = {
-                    2: `מזמור ב\nלָמָּה רָגְשׁוּ גוֹיִם וּלְאֻמִּים יֶהְגּוּ רִיק:\nיִתְיַצְּבוּ מַלְכֵי אֶרֶץ וְרוֹזְנִים נוֹסְדוּ יָחַד עַל יְהוָה וְעַל מְשִׁיחוֹ:\nנְנַתְּקָה אֶת מוֹסְרוֹתֵימוֹ וְנַשְׁלִיכָה מִמֶּנּוּ עֲבֹתֵימוֹ:\nיוֹשֵׁב בַּשָּׁמַיִם יִשְׂחָק אֲדֹנָי יִלְעַג לָמוֹ:\nאָז יְדַבֵּר אֵלֵימוֹ בְאַפּוֹ וּבַחֲרוֹנוֹ יְבַהֲלֵמוֹ:\nוַאֲנִי נָסַכְתִּי מַלְכִּי עַל צִיּוֹן הַר קָדְשִׁי:\nאֲסַפְּרָה אֶל חֹק יְהוָה אָמַר אֵלַי בְּנִי אַתָּה אֲנִי הַיּוֹם יְלִדְתִּיךָ:\nשְׁאַל מִמֶּנִּי וְאֶתְּנָה גוֹיִם נַחֲלָתֶךָ וַאֲחֻזָּתְךָ אַפְסֵי אָרֶץ:\nתְּרֹעֵם בְּשֵׁבֶט בַּרְזֶל כִּכְלִי יוֹצֵר תְּנַפְּצֵם:\nוְעַתָּה מְלָכִים הַשְׂכִּילוּ הִוָּסְרוּ שֹׁפְטֵי אָרֶץ:\nעִבְדוּ אֶת יְהוָה בְּיִרְאָה וְגִילוּ בִּרְעָדָה:\nנַשְּׁקוּ בַר פֶּן יֶאֱנַף וְתֹאבְדוּ דֶרֶךְ כִּי יִבְעַר כִּמְעַט אַפּוֹ אַשְׁרֵי כָּל חוֹסֵי בוֹ:`,
-                    
-                    3: `מזמור ג - מִזְמוֹר לְדָוִד בְּבָרְחוֹ מִפְּנֵי אַבְשָׁלוֹם בְּנוֹ\nיְהוָה מָה רַבּוּ צָרָי רַבִּים קָמִים עָלָי:\nרַבִּים אֹמְרִים לְנַפְשִׁי אֵין יְשׁוּעָתָה לּוֹ בֵאלֹהִים סֶלָה:\nוְאַתָּה יְהוָה מָגֵן בַּעֲדִי כְבוֹדִי וּמֵרִים רֹאשִׁי:\nקוֹלִי אֶל יְהוָה אֶקְרָא וַיַּעֲנֵנִי מֵהַר קָדְשׁוֹ סֶלָה:\nאֲנִי שָׁכַבְתִּי וָאִישָׁנָה הֱקִיצוֹתִי כִּי יְהוָה יִסְמְכֵנִי:\nלֹא אִירָא מֵרִבְבוֹת עָם אֲשֶׁר סָבִיב שָׁתוּ עָלָי:\nקוּמָה יְהוָה הוֹשִׁיעֵנִי אֱלֹהַי כִּי הִכִּיתָ אֶת כָּל אֹיְבַי לֶחִי שִׁנֵּי רְשָׁעִים שִׁבַּרְתָּ:\nלַיהוָה הַיְשׁוּעָה עַל עַמְּךָ בִרְכָתֶךָ סֶלָה:`
+                    2: `מזמור ב
+(1) לָמָּה רָגְשׁוּ גוֹיִם וּלְאֻמִּים יֶהְגּוּ רִיק:
+(2) יִתְיַצְּבוּ מַלְכֵי אֶרֶץ וְרוֹזְנִים נוֹסְדוּ יָחַד עַל יְהוָה וְעַל מְשִׁיחוֹ:
+...`,
+                    3: `מזמור ג - מִזְמוֹר לְדָוִד בְּבָרְחוֹ מִפְּנֵי אַבְשָׁלוֹם בְּנוֹ
+(1) יְהוָה מָה רַבּוּ צָרָי רַבִּים קָמִים עָלָי:
+(2) רַבִּים אֹמְרִים לְנַפְשִׁי אֵין יְשׁוּעָתָה לּוֹ בֵאלֹהִים סֶלָה:
+...`
                 };
-
-                // Add popular chapters
                 Object.assign(texts, popularChapters);
 
-                // Fill remaining chapters with instructions
+                // Fill others with a placeholder (will be replaced by JSON loader)
                 for (let i = 1; i <= 150; i++) {
                     if (!texts[i]) {
-                        texts[i] = `מזמור ${i}
-
-להשלמת הטקסטים המלאים:
-1. היכנס לאתר: https://mechon-mamre.org/p/pt/pt26${String(i).padStart(2, '0')}.htm
-2. העתק את הטקסט העברי מהאתר
-3. החלף את הודעה זו בטקסט המלא של פרק ${i}
-
-לדוגמה, עבור פרק ${i} יש לחפש בכתובת:
-https://mechon-mamre.org/p/pt/pt26${String(Math.floor(i/100))}${String(i%100).padStart(2, '0')}.htm
-
-פרקים שכבר הוכנסו במלואם: 1, 2, 3, 23, 91, 121
-
----
-(הודעה זו תוחלף בטקסט המלא כשתעדכן את הקוד)`;
+                        texts[i] = `מזמור ${i}\n(placeholder – יתעדכן אוטומטית מה-JSON)`;
                     }
                 }
-
                 return texts;
             }
         }
 
-        // Global functions
+        // Global functions (unchanged)
         function saveEmailConfig() {
             const userId = document.getElementById('emailjsUserId').value;
             const serviceId = document.getElementById('emailjsServiceId').value;
@@ -1268,66 +1258,72 @@ https://mechon-mamre.org/p/pt/pt26${String(Math.floor(i/100))}${String(i%100).pa
         }
     </script>
 
-    <!-- ✅ NEW: Load full text from your GitHub JSON (NO changes to your existing script) -->
+    <!-- ✅ Loader: fetch JSON and format each פרק by פסוק numbers -->
     <script>
       (async () => {
-        // ⬇️ Replace with your real path
-        const jsonUrl = "https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/BRANCH/Psalms%20-%20he%20-%20Miqra%20according%20to%20the%20Masorah.json";
+        const jsonUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Miqra%20according%20to%20the%20Masorah.json";
         try {
           const res = await fetch(jsonUrl);
           if (!res.ok) throw new Error("HTTP " + res.status);
           const data = await res.json();
 
-          // Try to normalize different JSON schemas into {1: "...", 2: "...", ... , 150: "..."}
+          const numberVerses = (versesArr) => {
+            if (!Array.isArray(versesArr)) return String(versesArr || "").trim();
+            return versesArr
+              .map((v, i) => `(${i + 1}) ${typeof v === 'string' ? v.trim() : String(v || '').trim()}`)
+              .join('\n');
+          };
+
           function buildTehillimFromMiqraJSON(src) {
             const out = {};
 
-            // Common shapes:
-
-            // 1) { chapters: [ ["v1","v2",...], ["v1","v2",...], ... ] }
+            // 1) Array form: { chapters: [ ["v1","v2",...], ... ] }
             if (Array.isArray(src?.chapters)) {
               src.chapters.forEach((verses, idx) => {
-                out[idx + 1] = Array.isArray(verses) ? verses.join("\n") : String(verses || "").trim();
+                out[idx + 1] = numberVerses(verses);
               });
               return out;
             }
 
-            // 2) { text: [ ["v1","v2",...], ... ] } (Sefaria-like)
+            // 2) Sefaria-like: { text: [ ["v1","v2",...], ... ] }
             if (Array.isArray(src?.text)) {
               src.text.forEach((verses, idx) => {
-                out[idx + 1] = Array.isArray(verses) ? verses.join("\n") : String(verses || "").trim();
+                out[idx + 1] = numberVerses(verses);
               });
               return out;
             }
 
-            // 3) { "1": ["v1","v2",...], "2": [...], ... } (numeric keys)
+            // 3) Numeric keys: { "1": ["v1","v2",...], "2": [...] }
             const numericKeys = Object.keys(src || {}).filter(k => /^\d+$/.test(k));
             if (numericKeys.length) {
               numericKeys.sort((a,b)=>Number(a)-Number(b)).forEach(k => {
-                const verses = src[k];
-                out[Number(k)] = Array.isArray(verses) ? verses.join("\n") : String(verses || "").trim();
+                out[Number(k)] = numberVerses(src[k]);
               });
               return out;
             }
 
-            // 4) Nested book name keys: { Psalms: {...} } or { Tehillim: {...} }
+            // 4) Nested under book key
             const bookNode = src?.Psalms || src?.Tehillim || src?.psalms || src?.tehillim || src?.book || null;
-            if (bookNode) {
-              return buildTehillimFromMiqraJSON(bookNode);
-            }
+            if (bookNode) return buildTehillimFromMiqraJSON(bookNode);
 
-            console.warn("Unknown Miqra JSON schema; could not parse.");
+            console.warn("Unknown JSON schema; could not parse.");
             return out;
           }
 
           const texts = buildTehillimFromMiqraJSON(data);
-
           const count = Object.keys(texts).length;
+
           if (count >= 150) {
             window.tehillimPlatform.tehillimTexts = texts;
-            console.log("✅ Loaded full Tehillim from JSON. Chapters:", count);
+            console.log("✅ Loaded full Tehillim with numbered פסוקים. Chapters:", count);
+
+            // If a chapter modal is open, refresh its content with numbered text
+            if (window.tehillimPlatform.currentChapterNum) {
+              const n = window.tehillimPlatform.currentChapterNum;
+              document.getElementById('chapterContent').textContent = window.tehillimPlatform.tehillimTexts[n];
+            }
           } else {
-            console.warn("⚠️ Parsed only", count, "chapters (expected 150). Check your JSON format or path.");
+            console.warn("⚠️ Parsed only", count, "chapters (expected 150). Check the JSON structure.");
           }
         } catch (err) {
           console.error("Failed to load Tehillim JSON:", err);
