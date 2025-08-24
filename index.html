@@ -12,9 +12,9 @@
       --card:#ffffff;
       --ink:#1f2937;
       --muted:#6b7280;
-      --brand:#6d28d9;          /* deep purple */
-      --brand-2:#7c3aed;        /* lighter purple */
-      --accent:#10b981;         /* teal/green */
+      --brand:#6d28d9;
+      --brand-2:#7c3aed;
+      --accent:#10b981;
       --danger:#ef4444;
       --ring:rgba(109,40,217,.18);
       --shadow: 0 10px 30px rgba(17,24,39,.08);
@@ -29,7 +29,6 @@
       color:var(--ink);
     }
 
-    /* Layout */
     .shell{
       display:grid;
       grid-template-columns: 320px 1fr;
@@ -81,7 +80,6 @@
     .btn.success{background:var(--accent)}
     .btn.danger{background:var(--danger)}
 
-    /* Sidebar */
     .sidebar{
       position: sticky; top:60px; align-self:start;
       height: calc(100vh - 60px);
@@ -119,7 +117,6 @@
     .camp-item:hover{background:#fafafa; transform: translateY(-1px)}
     .caption{font-size:12px; color:var(--muted)}
 
-    /* Main */
     .main{
       padding:24px; max-width: 1000px; width:100%;
     }
@@ -154,7 +151,6 @@
     .section{margin-top:18px}
     .stack{display:grid; gap:12px}
 
-    /* Modal */
     .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:50; }
     .modal.on{ display:flex }
     .backdrop{ position:absolute; inset:0; background:rgba(17,24,39,.55); backdrop-filter: blur(4px); }
@@ -335,16 +331,11 @@
     const H_TENS = {10:'י',20:'כ',30:'ל',40:'מ',50:'נ',60:'ס',70:'ע',80:'פ',90:'צ'};
     const H_HUND = {100:'ק',200:'ר',300:'ש',400:'ת'};
     function toHebNum(n, punctuation=true){
-      // Build additive Hebrew numerals: 1..999+
       let result = '';
       let num = n;
-
-      // hundreds (400, 300, 200, 100 ...)
       [400,300,200,100].forEach(h=>{
         while(num>=h){ result += H_HUND[h]; num -= h; }
       });
-
-      // tens special cases (15, 16 as ט״ו, ט״ז)
       if (num === 15){ result += 'טו'; num = 0; }
       else if (num === 16){ result += 'טז'; num = 0; }
       else{
@@ -352,14 +343,9 @@
           while(num>=t){ result += H_TENS[t]; num -= t; }
         });
       }
-
-      // units
       if (num>0) result += H_UNITS[num] || '';
-
-      // gershayim/geresh (optional visual punctuation)
       if (!punctuation) return result;
       if (result.length >= 2){
-        // add ״ before last char
         return result.slice(0,-1) + '״' + result.slice(-1);
       }else if (result.length === 1){
         return result + '׳';
@@ -367,20 +353,18 @@
       return result;
     }
 
-    /* ---------- Platform ---------- */
     class TehillimPlatform {
       constructor(){
         this.currentCampaignId = null;
         this.currentChapterNum = null;
         this.emailConfig = null;
-        this.tehillimTexts = this.getTehillimTexts(); // placeholder until JSON loads
+        this.tehillimTexts = this.getTehillimTexts();
         this.init();
       }
 
       init(){
         this.loadEmailConfig();
         if (typeof emailjs !== 'undefined') this.initEmailJS();
-
         this.setupEventListeners();
         this.loadFromUrl();
         this.displayExistingCampaigns();
@@ -391,13 +375,11 @@
           e.preventDefault();
           this.createCampaign();
         });
-        // Modal close with ESC
         window.addEventListener('keydown', (e)=>{ if (e.key==='Escape') this.closeChapterModal(); });
       }
 
-      /* -------- Email config -------- */
       loadEmailConfig(){
-        const defaultConfig = {
+        const def = {
           userId: 'd_LsqV-KBZuAeuCjf',
           serviceId: 'service_p76h23d',
           campaignCreatedTemplateId: 'template_0hmmrlk',
@@ -405,16 +387,8 @@
           chapterCompletedTemplateId: 'template_j01dkdf'
         };
         const saved = localStorage.getItem('tehillimEmailConfig');
-        if (saved){
-          const parsed = JSON.parse(saved);
-          this.emailConfig = {
-            ...defaultConfig,
-            ...parsed
-          };
-        } else {
-          this.emailConfig = defaultConfig;
-          localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
-        }
+        this.emailConfig = saved ? {...def, ...JSON.parse(saved)} : def;
+        if (!saved) localStorage.setItem('tehillimEmailConfig', JSON.stringify(def));
       }
 
       initEmailJS(){
@@ -425,21 +399,17 @@
         }
       }
 
-      /* -------- Routing -------- */
       loadFromUrl(){
         const urlParams = new URLSearchParams(location.search);
         const campaignId = urlParams.get('campaign');
         if (campaignId) this.loadCampaign(campaignId);
       }
 
-      /* -------- Campaigns -------- */
       getCampaigns(){
         const data = localStorage.getItem('tehillimCampaigns');
         return data ? JSON.parse(data) : {};
       }
-      saveCampaigns(c){
-        localStorage.setItem('tehillimCampaigns', JSON.stringify(c));
-      }
+      saveCampaigns(c){ localStorage.setItem('tehillimCampaigns', JSON.stringify(c)); }
 
       createCampaign(){
         const name = document.getElementById('campaignName').value.trim();
@@ -449,7 +419,6 @@
         if (!name || !organizer || !organizerEmail){
           alert('נא למלא את כל השדות הנדרשים'); return;
         }
-
         const id = this.generateId();
         const campaign = {
           id, name, description, organizer, organizerEmail,
@@ -462,7 +431,7 @@
 
         this.sendCampaignCreatedEmail(campaign);
         this.showCampaignUrl(id);
-        (document.getElementById('campaignForm')).reset();
+        document.getElementById('campaignForm').reset();
         this.displayExistingCampaigns();
       }
 
@@ -471,6 +440,7 @@
         const url = `${base}?campaign=${id}`;
         document.getElementById('campaignUrl').textContent = url;
         document.getElementById('urlSection').style.display = '';
+        this.currentCampaignId = id;
       }
 
       loadCampaign(id){
@@ -505,11 +475,10 @@
         for (let i=1;i<=150;i++){
           const ch = chapters[i];
           const div = document.createElement('div');
-          const state = ch.status; // available | taken | completed
-          div.className = `chip ${state}`;
-          div.textContent = toHebNum(i); // Hebrew chapter label
-          if (state==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
-          if (state==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
+          div.className = `chip ${ch.status}`;
+          div.textContent = toHebNum(i);
+          if (ch.status==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
+          if (ch.status==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
           div.onclick = ()=> this.handleChapterClick(i);
           grid.appendChild(div);
         }
@@ -524,13 +493,12 @@
         document.getElementById('progressFill').style.width = `${pct}%`;
       }
 
-      handleChapterClick(chNum){
+      handleChapterClick(chapterNum){
         const campaigns = this.getCampaigns();
         const c = campaigns[this.currentCampaignId];
-        const chapter = c.chapters[chNum];
-
-        if (chapter.status==='available') this.takeChapter(chNum);
-        else if (chapter.status==='taken') this.showChapterText(chNum);
+        const chapter = c.chapters[chapterNum];
+        if (chapter.status==='available') this.takeChapter(chapterNum);
+        else if (chapter.status==='taken') this.showChapterText(chapterNum);
         else alert('פרק זה כבר הושלם');
       }
 
@@ -585,11 +553,9 @@
 
       closeChapterModal(){ document.getElementById('chapterModal').classList.remove('on'); }
 
-      /* -------- Email -------- */
       async sendCampaignCreatedEmail(campaign){
         if (typeof emailjs==='undefined') return;
         if (!this.emailConfig?.campaignCreatedTemplateId) return;
-
         const url = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
         const params = {
           to_email: campaign.organizerEmail,
@@ -600,15 +566,12 @@
           message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים.`,
           subject: `קמפיין תהילים נוצר — ${campaign.name}`
         };
-        try{
-          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params);
-        }catch(e){ console.warn('sendCampaignCreatedEmail failed', e); }
+        try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params); }catch(_){}
       }
 
       async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
         if (typeof emailjs==='undefined' || !this.emailConfig) return;
 
-        // notify organizer
         if (this.emailConfig.chapterCompletedTemplateId){
           const orgParams = {
             to_email: campaign.organizerEmail,
@@ -624,7 +587,6 @@
           try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
         }
 
-        // send text to participant
         if (userEmail && this.emailConfig.chapterTakenTemplateId){
           const userParams = {
             to_email: userEmail,
@@ -652,12 +614,9 @@
           message: `${userName} סיים לקרוא פרק ${toHebNum(chapterNum)} בקמפיין "${campaign.name}"!`,
           subject: `פרק הושלם — ${campaign.name}`
         };
-        try{
-          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params);
-        }catch(e){ console.warn('sendChapterCompletedEmail failed', e); }
+        try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params); }catch(_){}
       }
 
-      /* -------- Utils -------- */
       generateId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
 
       initializeChapters(){
@@ -676,14 +635,40 @@
       }
 
       getTehillimTexts(){
-        // Placeholder until JSON is loaded; will be replaced.
         const t = {};
-        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i)}\n(יטען מה־JSON)`;
+        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i)}\n(יטען מה־TXT)`;
         return t;
+      }
+
+      displayExistingCampaigns(){
+        const box = document.getElementById('campaignsList');
+        const campaigns = this.getCampaigns();
+        const ids = Object.keys(campaigns);
+        box.innerHTML = '';
+        if (!ids.length){
+          box.innerHTML = '<div class="muted">אין קמפיינים קיימים</div>';
+          return;
+        }
+        ids.forEach(id=>{
+          const c = campaigns[id];
+          const completed = Object.values(c.chapters).filter(x=>x.status==='completed').length;
+          const pct = Math.round(completed/150*100);
+          const el = document.createElement('div');
+          el.className = 'camp-item';
+          el.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+              <div style="font-weight:700">${c.name || 'ללא שם'}</div>
+              <div class="caption">${pct}% הושלם</div>
+            </div>
+            <div class="caption">מארגן: ${c.organizer || 'לא ידוע'} • ${completed}/150</div>
+          `;
+          el.onclick = ()=> this.loadCampaign(id);
+          box.appendChild(el);
+        });
       }
     }
 
-    /* ---------- Global helpers bound to UI ---------- */
+    /* Global helpers */
     function saveEmailConfig(){
       const config = {
         userId: document.getElementById('emailjsUserId').value.trim(),
@@ -739,89 +724,146 @@
     function showCreateForm(){ window.tehillimPlatform.showCreateForm(); }
     function closeChapterModal(){ window.tehillimPlatform.closeChapterModal(); }
 
-    /* ---------- Bootstrap ---------- */
+    /* Bootstrap */
     window.tehillimPlatform = new TehillimPlatform();
+  </script>
 
-    /* ---------- Load full text JSON & number פסוקים with Hebrew letters ---------- */
-    (async ()=>{
-      // Replace with your JSON if needed:
-      const jsonUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Miqra%20according%20to%20the%20Masorah.json";
-      try{
-        const res = await fetch(jsonUrl);
-        if (!res.ok) throw new Error('HTTP '+res.status);
-        const data = await res.json();
+  <!-- 🔄 TXT loader: parses your file and numbers פסוקים with Hebrew letters -->
+  <script>
+    (async () => {
+      const txtUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Tanach%20with%20Nikkud%20(1).txt";
 
-        const numberVersesHeb = (arr)=>{
-          if (!Array.isArray(arr)) return String(arr||'').trim();
-          return arr.map((v,i)=>`(${toHebNum(i+1)}) ${typeof v==='string'? v.trim() : String(v||'').trim()}`).join('\n');
-        };
+      const CH_RE = /^(?:תהילים\s*)?פרק\s+([\u0590-\u05FF״׳"]+)\s*$/;
+      const MZ_RE = /^מזמור\s+([\u0590-\u05FF״׳"]+)\s*$/;
+      const V_ARABIC = /^\s*\(?\d{1,3}\)?[.:)\-\s]+/;
+      const V_HEB_PARENS = /^\s*\([\u0590-\u05FF״׳"]{1,4}\)\s+/;
+      const V_HEB_BARE = /^\s*[\u0590-\u05FF]{1,4}[״׳']?\s+/;
+      const SOF_PASUQ = /׃/;
 
-        function parseStructure(src){
-          const out = {};
-          if (Array.isArray(src?.chapters)){
-            src.chapters.forEach((verses, idx)=> out[idx+1] = numberVersesHeb(verses));
-            return out;
-          }
-          if (Array.isArray(src?.text)){
-            src.text.forEach((verses, idx)=> out[idx+1] = numberVersesHeb(verses));
-            return out;
-          }
-          const numericKeys = Object.keys(src||{}).filter(k=>/^\d+$/.test(k));
-          if (numericKeys.length){
-            numericKeys.sort((a,b)=>+a-+b).forEach(k=> out[+k]= numberVersesHeb(src[k]));
-            return out;
-          }
-          const bookNode = src?.Psalms || src?.Tehillim || src?.psalms || src?.tehillim || src?.book || null;
-          if (bookNode) return parseStructure(bookNode);
-          return out;
-        }
-
-        const mapped = parseStructure(data);
-        if (Object.keys(mapped).length >= 150){
-          window.tehillimPlatform.tehillimTexts = mapped;
-          // If a modal is open, refresh with numbered text:
-          if (window.tehillimPlatform.currentChapterNum){
-            const n = window.tehillimPlatform.currentChapterNum;
-            document.getElementById('chapterContent').textContent = window.tehillimPlatform.tehillimTexts[n] || '';
-          }
-          console.log('✅ Full Tehillim loaded with Hebrew פסוק numbers.');
-        }else{
-          console.warn('⚠️ לא זוהו כל 150 הפרקים מה־JSON');
-        }
-      }catch(e){
-        console.error('טעינת JSON נכשלה', e);
+      function numberVersesHeb(arr) {
+        if (!Array.isArray(arr)) return String(arr || "").trim();
+        return arr.map((v, i) => `(${toHebNum(i + 1)}) ${String(v || "").trim()}`).join("\n");
       }
-    })();
 
-    /* ---------- Populate existing campaigns on load ---------- */
-    (function initialList(){
-      window.tehillimPlatform.displayExistingCampaigns = function(){
-        const box = document.getElementById('campaignsList');
-        const campaigns = this.getCampaigns();
-        const ids = Object.keys(campaigns);
-        box.innerHTML = '';
-        if (!ids.length){
-          box.innerHTML = '<div class="muted">אין קמפיינים קיימים</div>';
-          return;
+      function parseTehillimTXT(raw) {
+        let text = raw.replace(/^\uFEFF/, "");
+        text = text.replace(/\r\n?/g, "\n");
+
+        const lines = text.split("\n");
+        const chapters = [];
+        let current = [];
+
+        for (const line of lines) {
+          const l = line.trim();
+          if (!l) continue;
+          if (CH_RE.test(l) || MZ_RE.test(l)) {
+            if (current.length) chapters.push(current);
+            current = [];
+            continue;
+          }
+          current.push(line);
         }
-        ids.forEach(id=>{
-          const c = campaigns[id];
-          const completed = Object.values(c.chapters).filter(x=>x.status==='completed').length;
-          const pct = Math.round(completed/150*100);
-          const el = document.createElement('div');
-          el.className = 'camp-item';
-          el.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
-              <div style="font-weight:700">${c.name || 'ללא שם'}</div>
-              <div class="caption">${pct}% הושלם</div>
-            </div>
-            <div class="caption">מארגן: ${c.organizer || 'לא ידוע'} • ${completed}/150</div>
-          `;
-          el.onclick = ()=> this.loadCampaign(id);
-          box.appendChild(el);
-        });
-      };
-      window.tehillimPlatform.displayExistingCampaigns();
+        if (current.length) chapters.push(current);
+
+        if (chapters.length === 0) {
+          const nonEmpty = lines.filter(l => l.trim());
+          const per = Math.max(1, Math.floor(nonEmpty.length / 150));
+          for (let i = 0; i < 150; i++) {
+            chapters.push(nonEmpty.slice(i * per, (i + 1) * per));
+          }
+        }
+
+        function splitChapterToVerses(chLines) {
+          const verses = [];
+          let cur = "";
+          let sawMarkers = false;
+
+          const push = () => {
+            const t = cur.trim();
+            if (t) verses.push(t);
+            cur = "";
+          };
+
+          for (let rawLine of chLines) {
+            let line = rawLine.trim();
+            if (!line) continue;
+
+            let stripped = line;
+            if (V_ARABIC.test(stripped)) {
+              stripped = stripped.replace(V_ARABIC, "");
+              sawMarkers = true;
+              push();
+              cur = stripped;
+              continue;
+            }
+            if (V_HEB_PARENS.test(stripped)) {
+              stripped = stripped.replace(V_HEB_PARENS, "");
+              sawMarkers = true;
+              push();
+              cur = stripped;
+              continue;
+            }
+            if (V_HEB_BARE.test(stripped)) {
+              const tmp = stripped.replace(V_HEB_BARE, "");
+              if (tmp.length >= 3) {
+                stripped = tmp;
+                sawMarkers = true;
+                push();
+                cur = stripped;
+                continue;
+              }
+            }
+
+            if (cur) cur += " " + line;
+            else cur = line;
+
+            if (SOF_PASUQ.test(line)) {
+              push();
+            }
+          }
+          push();
+
+          if (!sawMarkers && verses.length <= 2) {
+            const fallback = chLines.map(l => l.trim()).filter(Boolean);
+            if (fallback.length) return fallback;
+          }
+          return verses;
+        }
+
+        const mapped = {};
+        let idx = 1;
+        for (const block of chapters) {
+          if (idx > 150) break;
+          const verses = splitChapterToVerses(block);
+          mapped[idx] = numberVersesHeb(verses);
+          idx++;
+        }
+        return mapped;
+      }
+
+      try {
+        const res = await fetch(txtUrl);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const raw = await res.text();
+
+        const texts = parseTehillimTXT(raw);
+        const count = Object.keys(texts).length;
+
+        if (count >= 150) {
+          window.tehillimPlatform.tehillimTexts = texts;
+
+          if (window.tehillimPlatform.currentChapterNum) {
+            const n = window.tehillimPlatform.currentChapterNum;
+            document.getElementById("chapterContent").textContent =
+              window.tehillimPlatform.tehillimTexts[n] || "";
+          }
+          console.log("✅ Loaded Tehillim from TXT with Hebrew-letter פסוקים. Chapters:", count);
+        } else {
+          console.warn("⚠️ Only parsed", count, "chapters (expected 150). Check TXT format.");
+        }
+      } catch (err) {
+        console.error("Failed to load TXT:", err);
+      }
     })();
   </script>
 </body>
