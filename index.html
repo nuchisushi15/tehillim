@@ -324,12 +324,15 @@
         </div>
 
         <!-- Email Setup Section -->
-        <div id="emailSetup" class="card email-setup" style="display: none;">
-            <h3>הגדרת שירות מייל (חד פעמי)</h3>
-            <p>כדי לקבל התראות במייל, יש להזין את פרטי EmailJS:</p>
+        <div id="emailSetup" class="card email-setup">
+            <h3>הגדרת שירות מייל</h3>
+            <p>כדי לקבל התראות במייל, יש להזין את פרטי EmailJS החדשים:</p>
+            <div class="alert alert-warning">
+                <strong>שגיאת Public Key!</strong> יש לעדכן את המפתח הציבורי מלוח הבקרה של EmailJS
+            </div>
             <div class="form-group">
                 <label for="emailjsUserId">EmailJS Public Key:</label>
-                <input type="text" id="emailjsUserId" value="d_LsqV-KBZuAeuCjf">
+                <input type="text" id="emailjsUserId" value="d_LsqV-KBZuAeuCjf" placeholder="הכנס את המפתח הציבורי החדש">
             </div>
             <div class="form-group">
                 <label for="emailjsServiceId">EmailJS Service ID:</label>
@@ -455,25 +458,16 @@
             }
 
             loadEmailConfig() {
-                // Auto-configure with your EmailJS settings
-                const defaultConfig = {
-                    userId: 'd_LsqV-KBZuAeuCjf',
-                    serviceId: 'service_p76h23d',
-                    templateId: 'template_46i4yl5'
-                };
-
+                // Show email setup since we need to update the public key
                 const savedConfig = localStorage.getItem('tehillimEmailConfig');
                 if (savedConfig) {
                     this.emailConfig = JSON.parse(savedConfig);
+                    // Still show setup for user to verify/update credentials
+                    document.getElementById('emailSetup').style.display = 'block';
                 } else {
-                    // Use default config
-                    this.emailConfig = defaultConfig;
-                    // Save to localStorage
-                    localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
+                    // Show setup section for initial configuration
+                    document.getElementById('emailSetup').style.display = 'block';
                 }
-                
-                // Hide setup section since we have complete config
-                document.getElementById('emailSetup').style.display = 'none';
             }
 
             initEmailJS() {
@@ -487,12 +481,20 @@
                 
                 if (this.emailConfig && this.emailConfig.userId) {
                     try {
-                        emailjs.init({
-                            publicKey: this.emailConfig.userId
-                        });
-                        console.log('EmailJS initialized successfully with public key:', this.emailConfig.userId);
-                    } catch (error) {
-                        console.error('EmailJS initialization failed:', error);
+                        // Try both initialization methods
+                        console.log('Trying initialization method 1...');
+                        emailjs.init(this.emailConfig.userId);
+                        console.log('EmailJS initialized successfully with method 1');
+                    } catch (error1) {
+                        console.log('Method 1 failed, trying method 2...');
+                        try {
+                            emailjs.init({
+                                publicKey: this.emailConfig.userId
+                            });
+                            console.log('EmailJS initialized successfully with method 2');
+                        } catch (error2) {
+                            console.error('Both EmailJS initialization methods failed:', error1, error2);
+                        }
                     }
                 } else {
                     console.error('No email config or user ID found');
