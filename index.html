@@ -312,7 +312,7 @@
       else if (num === 16){ result += 'טז'; num = 0; }
       else{ [90,80,70,60,50,40,30,20,10].forEach(t=>{ while(num>=t){ result += H_TENS[t]; num -= t; } }); }
       if (num>0) result += H_UNITS[num] || '';
-      if (!punctuation) return result;                   // ← no ׳/״ when false
+      if (!punctuation) return result;                   // chapters: no ׳/״
       if (result.length >= 2){ return result.slice(0,-1) + '״' + result.slice(-1); }
       if (result.length === 1){ return result + '׳'; }
       return result;
@@ -324,7 +324,7 @@
         this.currentCampaignId = null;
         this.currentChapterNum = null;
         this.emailConfig = null;
-        this.tehillimTexts = this.getTehillimTexts(); // placeholder
+        this.tehillimTexts = this.getTehillimTexts(); // placeholders (replaced by Sefaria on demand)
         this.init();
       }
 
@@ -457,7 +457,7 @@
           const ch = chapters[i];
           const div = document.createElement('div');
           div.className = `chip ${ch.status}`;
-          div.textContent = toHebNum(i, false); // ← no ׳/״ on chapter buttons
+          div.textContent = toHebNum(i, false); // ← CHAPTER BUTTONS: no ׳/״
           if (ch.status==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
           if (ch.status==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
           div.onclick = ()=> this.handleChapterClick(i);
@@ -498,8 +498,8 @@
           chapter.takenByEmail=email;
           this.saveCampaigns(campaigns);
 
-          // emails (non-blocking but waits for text readiness inside)
-          this.sendChapterTakenEmail(c, chapterNum, name, email);
+          // Preload Sefaria text for the email (best-effort; defined below)
+          fetchChapterFromSefaria(chapterNum).catch(()=>{});
 
           // refresh
           this.displayChapters(c.chapters);
@@ -509,6 +509,9 @@
 
           // open action modal with view/finish options
           this.openChapterActionModal(chapterNum);
+
+          // emails (non-blocking; will wait for Sefaria inside)
+          this.sendChapterTakenEmail(c, chapterNum, name, email);
           return;
         }
 
@@ -517,17 +520,13 @@
       }
 
       openChapterActionModal(chapterNum){
+        // (this version is wrapped/overridden by Sefaria loader below to ensure real text)
         this.currentChapterNum = chapterNum;
         document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum,false)}`;
-        document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || '';
-        const modal = document.getElementById('chapterModal');
-        modal.classList.add('on');
+        document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || 'טוען טקסט...';
+        document.getElementById('chapterModal').classList.add('on');
 
-        // Buttons
-        document.getElementById('viewChapterBtn').onclick = ()=>{
-          // already showing text; give a toast
-          showToast('מציג את הפרק', 'info');
-        };
+        document.getElementById('viewChapterBtn').onclick = ()=> showToast('מציג את הפרק', 'info');
         document.getElementById('finishChapterBtn').onclick = ()=> this.completeChapter(chapterNum);
       }
 
@@ -580,26 +579,15 @@
       async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
         if (typeof emailjs==='undefined' || !this.emailConfig) return;
 
-        // --- Wait up to 6s for the TXT to load (if promise exists) ---
-        async function waitForReady(p, ms=6000){
-          if (!p) return;
-          try {
-            await Promise.race([
-              p,
-              new Promise((_, rej)=> setTimeout(()=> rej(new Error("timeout")), ms))
-            ]);
-          } catch (_) { /* ignore timeout; best-effort below */ }
-        }
-        await waitForReady(window.tehillimTextReady);
+        // Ensure we have the real text for this chapter (from Sefaria)
+        try { await fetchChapterFromSefaria(chapterNum); } catch(_) {}
 
-        // Ensure we have the chapter text and not the placeholder
-        let chapterText = (this.tehillimTexts?.[chapterNum] || "").trim();
-        const isPlaceholder = /יטען מה־TXT/.test(chapterText) || chapterText.length < 10;
-        if (isPlaceholder) {
+        let chapterText = (this.tehillimTexts?.[chapterNum] || '').trim();
+        if (!chapterText || /יטען מה/.test(chapterText)) {
           chapterText = `תהילים — פרק ${toHebNum(chapterNum,false)}\n(לצפייה בטקסט המלא היכנסו לקישור הקמפיין)`;
         }
 
-        // 1) Notify organizer
+        // 1) Notify organizer (kept per your template choice)
         if (this.emailConfig.chapterCompletedTemplateId){
           const orgParams = {
             to_email: campaign.organizerEmail,
@@ -615,7 +603,7 @@
           try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
         }
 
-        // 2) Send the chapter text to participant
+        // 2) Send text to the participant
         if (userEmail && this.emailConfig.chapterTakenTemplateId){
           const campaignUrl = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
           const userParams = {
@@ -673,11 +661,11 @@
       }
       getTehillimTexts(){
         const t = {};
-        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i,false)}\n(יטען מה־TXT)`;
+        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i,false)}\n(יטען מה־Sefaria בעת הצורך)`;
         return t;
       }
 
-      /* list only campaigns from last 24 hours */
+      /* list only campaigns from last 24 hours (older remain accessible via their link) */
       displayExistingCampaigns(){
         const box = document.getElementById('campaignsList');
         const campaigns = this.getCampaigns();
@@ -736,140 +724,66 @@
     window.tehillimPlatform = new TehillimPlatform();
   </script>
 
-  <!-- 🔄 TXT loader: parses your file and numbers פסוקים; exposes readiness promise -->
+  <!-- 🔄 Sefaria loader: fetches a single פרק on demand; no API key needed -->
   <script>
-    // Readiness promise to ensure emails wait for full text
-    window.tehillimTextReady = new Promise((resolve, reject) => {
-      window._resolveTehillimTextReady = resolve;
-      window._rejectTehillimTextReady = reject;
-    });
+    // Simple in-memory cache
+    const _psalmsCache = new Map();
 
-    (async () => {
-      const txtUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Tanach%20with%20Nikkud%20(1).txt";
+    // Fetch one chapter from Sefaria — returns numbered פסוקים as a single string
+    async function fetchChapterFromSefaria(chNum){
+      if (_psalmsCache.has(chNum)) return _psalmsCache.get(chNum);
 
-      const CH_RE = /^(?:תהילים\s*)?פרק\s+([\u0590-\u05FF״׳"]+)\s*$/;
-      const MZ_RE = /^מזמור\s+([\u0590-\u05FF״׳"]+)\s*$/;
-      const V_ARABIC = /^\s*\(?\d{1,3}\)?[.:)\-\s]+/;
-      const V_HEB_PARENS = /^\s*\([\u0590-\u05FF״׳"]{1,4}\)\s+/;
-      const V_HEB_BARE = /^\s*[\u0590-\u05FF]{1,4}[״׳']?\s+/;
-      const SOF_PASUQ = /׃/;
+      const url = `https://www.sefaria.org/api/texts/Psalms.${chNum}?lang=he&commentary=0`;
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) throw new Error('Sefaria HTTP ' + res.status);
+      const data = await res.json();
 
-      function numberVersesHeb(arr) {
-        if (!Array.isArray(arr)) return String(arr || "").trim();
-        return arr.map((v, i) => `(${toHebNum(i + 1)}) ${String(v || "").trim()}`).join("\n");
+      const verses = Array.isArray(data.he) ? data.he : [];
+      const numbered = verses
+        .map((line, i) => `(${toHebNum(i+1)}) ${String(line || '').trim()}`)
+        .join('\n');
+
+      const text = numbered || `פרק ${toHebNum(chNum,false)} — לא נמצא טקסט`;
+      _psalmsCache.set(chNum, text);
+
+      // also update the platform store so UI/email sees it
+      if (window.tehillimPlatform){
+        window.tehillimPlatform.tehillimTexts[chNum] = text;
+      }
+      return text;
+    }
+
+    // Ensure the chapter modal always shows the real Sefaria text
+    const _origOpen = TehillimPlatform.prototype.openChapterActionModal;
+    TehillimPlatform.prototype.openChapterActionModal = async function(chapterNum){
+      this.currentChapterNum = chapterNum;
+      document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum,false)}`;
+      document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || 'טוען טקסט...';
+      document.getElementById('chapterModal').classList.add('on');
+
+      try{
+        const t = await fetchChapterFromSefaria(chapterNum);
+        document.getElementById('chapterContent').textContent = t;
+      }catch(e){
+        showToast('שגיאה בטעינת הטקסט מסֶפַרְיָה', 'error');
+        console.error(e);
       }
 
-      function parseTehillimTXT(raw) {
-        let text = raw.replace(/^\uFEFF/, "");
-        text = text.replace(/\r\n?/g, "\n");
+      document.getElementById('viewChapterBtn').onclick = ()=> showToast('מציג את הפרק', 'info');
+      document.getElementById('finishChapterBtn').onclick = ()=> this.completeChapter(chapterNum);
+    };
 
-        const lines = text.split("\n");
-        const chapters = [];
-        let current = [];
-
-        for (const line of lines) {
-          const l = line.trim();
-          if (!l) continue;
-          if (CH_RE.test(l) || MZ_RE.test(l)) {
-            if (current.length) chapters.push(current);
-            current = [];
-            continue;
-          }
-          current.push(line);
-        }
-        if (current.length) chapters.push(current);
-
-        if (chapters.length === 0) {
-          const nonEmpty = lines.filter(l => l.trim());
-          const per = Math.max(1, Math.floor(nonEmpty.length / 150));
-          for (let i = 0; i < 150; i++) {
-            chapters.push(nonEmpty.slice(i * per, (i + 1) * per));
-          }
-        }
-
-        function splitChapterToVerses(chLines) {
-          const verses = [];
-          let cur = "";
-          let sawMarkers = false;
-
-          const push = () => { const t = cur.trim(); if (t) verses.push(t); cur = ""; };
-
-          for (let rawLine of chLines) {
-            let line = rawLine.trim();
-            if (!line) continue;
-
-            let stripped = line;
-            if (V_ARABIC.test(stripped)) {
-              stripped = stripped.replace(V_ARABIC, "");
-              sawMarkers = true; push(); cur = stripped; continue;
-            }
-            if (V_HEB_PARENS.test(stripped)) {
-              stripped = stripped.replace(V_HEB_PARENS, "");
-              sawMarkers = true; push(); cur = stripped; continue;
-            }
-            if (V_HEB_BARE.test(stripped)) {
-              const tmp = stripped.replace(V_HEB_BARE, "");
-              if (tmp.length >= 3) { stripped = tmp; sawMarkers = true; push(); cur = stripped; continue; }
-            }
-
-            if (cur) cur += " " + line; else cur = line;
-            if (SOF_PASUQ.test(line)) { push(); }
-          }
-          push();
-
-          if (!sawMarkers && verses.length <= 2) {
-            const fallback = chLines.map(l => l.trim()).filter(Boolean);
-            if (fallback.length) return fallback;
-          }
-          return verses;
-        }
-
-        const mapped = {};
-        let idx = 1;
-        for (const block of chapters) {
-          if (idx > 150) break;
-          const verses = splitChapterToVerses(block);
-          mapped[idx] = numberVersesHeb(verses);
-          idx++;
-        }
-        return mapped;
+    // Preload text when user is about to take a chapter (best-effort)
+    const _origHandle = TehillimPlatform.prototype.handleChapterClick;
+    TehillimPlatform.prototype.handleChapterClick = async function(chapterNum){
+      const campaigns = this.getCampaigns();
+      const c = campaigns[this.currentCampaignId];
+      const ch = c?.chapters?.[chapterNum];
+      if (ch && ch.status === 'available'){
+        fetchChapterFromSefaria(chapterNum).catch(()=>{});
       }
-
-      try {
-        const res = await fetch(txtUrl);
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const raw = await res.text();
-
-        const texts = parseTehillimTXT(raw);
-        const count = Object.keys(texts).length;
-
-        if (count >= 150) {
-          window.tehillimPlatform.tehillimTexts = texts;
-
-          // signal READY for email sending
-          if (typeof window._resolveTehillimTextReady === "function") {
-            window._resolveTehillimTextReady(true);
-          }
-
-          if (window.tehillimPlatform.currentChapterNum) {
-            const n = window.tehillimPlatform.currentChapterNum;
-            document.getElementById("chapterContent").textContent =
-              window.tehillimPlatform.tehillimTexts[n] || "";
-          }
-          console.log("✅ Loaded Tehillim from TXT with Hebrew-letter פסוקים. Chapters:", count);
-        } else {
-          console.warn("⚠️ Only parsed", count, "chapters (expected 150). Check TXT format.");
-          if (typeof window._rejectTehillimTextReady === "function") {
-            window._rejectTehillimTextReady(new Error("Not all chapters parsed"));
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load TXT:", err);
-        if (typeof window._rejectTehillimTextReady === "function") {
-          window._rejectTehillimTextReady(err);
-        }
-      }
-    })();
+      return _origHandle.call(this, chapterNum);
+    };
   </script>
 </body>
 </html>
