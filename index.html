@@ -432,8 +432,23 @@
             }
 
             init() {
+                console.log('Platform initializing...');
                 this.loadEmailConfig();
-                this.initEmailJS();
+                
+                // Wait for EmailJS to load before initializing
+                if (typeof emailjs !== 'undefined') {
+                    this.initEmailJS();
+                } else {
+                    console.log('EmailJS not loaded yet, waiting...');
+                    setTimeout(() => {
+                        if (typeof emailjs !== 'undefined') {
+                            this.initEmailJS();
+                        } else {
+                            console.error('EmailJS failed to load');
+                        }
+                    }, 1000);
+                }
+                
                 this.loadFromUrl();
                 this.displayExistingCampaigns();
                 this.setupEventListeners();
@@ -463,12 +478,19 @@
 
             initEmailJS() {
                 console.log('Initializing EmailJS...');
-                console.log('Email config:', this.emailConfig);
+                console.log('Email config:', JSON.stringify(this.emailConfig, null, 2));
+                
+                if (typeof emailjs === 'undefined') {
+                    console.error('EmailJS library not loaded');
+                    return;
+                }
                 
                 if (this.emailConfig && this.emailConfig.userId) {
                     try {
-                        emailjs.init(this.emailConfig.userId);
-                        console.log('EmailJS initialized successfully with user ID:', this.emailConfig.userId);
+                        emailjs.init({
+                            publicKey: this.emailConfig.userId
+                        });
+                        console.log('EmailJS initialized successfully with public key:', this.emailConfig.userId);
                     } catch (error) {
                         console.error('EmailJS initialization failed:', error);
                     }
@@ -545,11 +567,17 @@
 
             async sendCampaignCreatedEmail(campaign) {
                 console.log('Attempting to send campaign creation email...');
-                console.log('Email config:', this.emailConfig);
+                console.log('Email config:', JSON.stringify(this.emailConfig, null, 2));
+                
+                if (typeof emailjs === 'undefined') {
+                    console.error('EmailJS library not loaded');
+                    alert('שירות המייל לא זמין - הקמפיין נוצר אך המייל לא נשלח');
+                    return;
+                }
                 
                 if (!this.emailConfig) {
                     console.error('No email config found');
-                    alert('אין הגדרות מייל - המייל לא נשלח');
+                    alert('אין הגדרות מייל - הקמפיין נוצר אך המייל לא נשלח');
                     return;
                 }
 
@@ -558,6 +586,8 @@
                 const templateParams = {
                     to_name: campaign.organizer,
                     to_email: campaign.organizerEmail,
+                    from_name: "פלטפורמת תהילים",
+                    reply_to: campaign.organizerEmail,
                     campaign_name: campaign.name,
                     campaign_url: campaignUrl,
                     message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`,
@@ -566,7 +596,7 @@
                     chapter_text: ''
                 };
 
-                console.log('Email template params:', templateParams);
+                console.log('Email template params:', JSON.stringify(templateParams, null, 2));
 
                 try {
                     console.log('Sending email with EmailJS...');
@@ -579,7 +609,7 @@
                     alert('קמפיין נוצר בהצלחה! נשלח מייל עם הקישור');
                 } catch (error) {
                     console.error('Email send failed:', error);
-                    alert('הקמפיין נוצר אך המייל לא נשלח. שגיאה: ' + error.text);
+                    alert('הקמפיין נוצר אך המייל לא נשלח. שגיאה: ' + (error.text || error.message));
                 }
             }
 
@@ -844,11 +874,11 @@
             displayExistingCampaigns() {
                 console.log('Displaying existing campaigns...');
                 const campaigns = this.getCampaigns();
-                console.log('Found campaigns:', campaigns);
+                console.log('Found campaigns:', JSON.stringify(campaigns, null, 2));
                 
                 const listDiv = document.getElementById('campaignsList');
                 
-                const campaignIds = Object.keys(campaigns);
+                const campaignIds = Object.keys(campaigns || {});
                 console.log('Campaign IDs:', campaignIds);
                 
                 if (campaignIds.length === 0) {
@@ -859,15 +889,20 @@
                 listDiv.innerHTML = '';
                 campaignIds.forEach(id => {
                     const campaign = campaigns[id];
-                    const completed = Object.values(campaign.chapters).filter(ch => ch.status === 'completed').length;
+                    if (!campaign || !campaign.chapters) {
+                        console.error('Invalid campaign data for ID:', id);
+                        return;
+                    }
+                    
+                    const completed = Object.values(campaign.chapters).filter(ch => ch && ch.status === 'completed').length;
                     const percentage = Math.round((completed / 150) * 100);
 
                     const item = document.createElement('div');
                     item.className = 'campaign-item';
                     item.onclick = () => this.loadCampaign(id);
                     item.innerHTML = `
-                        <strong>${campaign.name}</strong><br>
-                        <small>מארגן: ${campaign.organizer} | הושלמו: ${completed}/150 (${percentage}%)</small>
+                        <strong>${campaign.name || 'ללא שם'}</strong><br>
+                        <small>מארגן: ${campaign.organizer || 'לא ידוע'} | הושלמו: ${completed}/150 (${percentage}%)</small>
                     `;
                     listDiv.appendChild(item);
                 });
