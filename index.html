@@ -16,14 +16,19 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Hebrew", "Helvetica Neue", Arial;
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Hebrew", "Helvetica Neue", Arial;
       background: radial-gradient(1000px 600px at 80% -200px, #ede9fe 0%, transparent 70%), var(--bg);
       color:var(--ink);
     }
+
     /* Toasts */
     .toasts{position:fixed; top:14px; right:14px; z-index:9999; display:grid; gap:8px}
-    .toast{background:#fff; color:#111; border:1px solid #e5e7eb; border-inline-start:4px solid var(--brand);
-      border-radius:12px; box-shadow:var(--shadow); padding:10px 12px; min-width:240px; animation:slideIn .2s ease;}
+    .toast{
+      background:#fff; color:#111; border:1px solid #e5e7eb; border-inline-start:4px solid var(--brand);
+      border-radius:12px; box-shadow:var(--shadow); padding:10px 12px; min-width:240px;
+      animation:slideIn .2s ease;
+    }
     .toast.success{border-inline-start-color:var(--accent)}
     .toast.error{border-inline-start-color:var(--danger)}
     @keyframes slideIn{from{transform:translateY(-10px); opacity:.0} to{transform:translateY(0); opacity:1}}
@@ -122,10 +127,26 @@
 </head>
 
 <body>
-  <!-- Toast container -->
+  <!-- Toasts -->
   <div id="toasts" class="toasts" aria-live="polite"></div>
 
-  <!-- Chapter modal -->
+  <!-- Confirm Modal (internal, no browser confirm) -->
+  <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="backdrop" onclick="closeConfirm()"></div>
+    <div class="dialog" style="width:min(520px,96vw)">
+      <header>
+        <h3 id="confirmTitle" style="margin:0">אישור</h3>
+        <button class="close-x" onclick="closeConfirm()" aria-label="סגור">×</button>
+      </header>
+      <div id="confirmMessage" class="content">האם לאשר?</div>
+      <div class="actions">
+        <button class="btn success" id="confirmYes">אישור</button>
+        <button class="btn ghost" onclick="closeConfirm()">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chapter Modal -->
   <div id="chapterModal" class="modal" role="dialog" aria-modal="true">
     <div class="backdrop" onclick="closeChapterModal()"></div>
     <div class="dialog" style="width:min(720px, 92vw)">
@@ -141,7 +162,7 @@
     </div>
   </div>
 
-  <!-- Admin modal -->
+  <!-- Admin Modal -->
   <div id="adminModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
     <div class="backdrop" onclick="closeAdmin()"></div>
     <div class="dialog">
@@ -172,6 +193,7 @@
     </div>
   </div>
 
+  <!-- Topbar -->
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand"><div class="logo"></div> פלטפורמת תהילים</div>
@@ -182,6 +204,7 @@
     </div>
   </header>
 
+  <!-- Shell -->
   <div class="shell">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -282,6 +305,24 @@
       setTimeout(()=> { el.style.opacity = '0'; el.style.transform='translateY(-6px)'; setTimeout(()=> el.remove(), 200); }, timeout);
     }
 
+    /* ---------- Internal Confirm ---------- */
+    let _confirmResolver = null;
+    function confirmDialog(message, title='אישור'){
+      const modal = document.getElementById('confirmModal');
+      document.getElementById('confirmMessage').textContent = message;
+      document.getElementById('confirmTitle').textContent = title;
+      modal.classList.add('on');
+      return new Promise(resolve => { _confirmResolver = resolve; });
+    }
+    function closeConfirm(){
+      document.getElementById('confirmModal').classList.remove('on');
+      if (_confirmResolver){ _confirmResolver(false); _confirmResolver = null; }
+    }
+    document.getElementById('confirmYes').addEventListener('click', ()=>{
+      document.getElementById('confirmModal').classList.remove('on');
+      if (_confirmResolver){ _confirmResolver(true); _confirmResolver = null; }
+    });
+
     /* ---------- Hebrew numerals ---------- */
     const H_UNITS = {1:'א',2:'ב',3:'ג',4:'ד',5:'ה',6:'ו',7:'ז',8:'ח',9:'ט'};
     const H_TENS = {10:'י',20:'כ',30:'ל',40:'מ',50:'נ',60:'ס',70:'ע',80:'פ',90:'צ'};
@@ -318,7 +359,12 @@
         this.displayExistingCampaigns();
         // cross-tab sync
         window.addEventListener('storage', (e)=>{
-          if (e.key === 'tehillimCampaigns'){ this.displayExistingCampaigns(); if (this.currentCampaignId){ this.loadCampaign(this.currentCampaignId, {showCopyBar:true}); } }
+          if (e.key === 'tehillimCampaigns'){
+            this.displayExistingCampaigns();
+            if (this.currentCampaignId){
+              this.loadCampaign(this.currentCampaignId, {showCopyBar:true});
+            }
+          }
         });
       }
 
@@ -328,6 +374,7 @@
           await this.createCampaign();
         });
         window.addEventListener('keydown', (e)=>{ if (e.key==='Escape') this.closeChapterModal(); });
+        // close chapter modal by clicking outside handled in HTML
       }
 
       loadEmailConfig(){
@@ -369,7 +416,7 @@
       }
       saveCampaigns(c){
         localStorage.setItem('tehillimCampaigns', JSON.stringify(c));
-        // force storage event to self in some browsers (noop write)
+        // nudge storage event for same-tab updates
         localStorage.setItem('tehillimCampaigns_lastWrite', Date.now().toString());
       }
 
@@ -390,14 +437,13 @@
         campaigns[id] = campaign;
         this.saveCampaigns(campaigns);
 
-        // Verify persisted (helps when opening new tab)
-        const verify = this.getCampaigns()[id];
-        if (!verify){ showToast('שגיאה בשמירת הקמפיין', 'error'); return; }
+        // verify persisted
+        if (!this.getCampaigns()[id]){ showToast('שגיאה בשמירת הקמפיין', 'error'); return; }
 
-        // Send email (non-blocking)
+        // email non-blocking
         this.sendCampaignCreatedEmail(campaign);
 
-        // Auto-navigate to campaign with copy bar visible
+        // navigate to campaign with copy bar
         this.navigateToCampaign(id, {showCopyBar:true});
         document.getElementById('campaignForm').reset();
         this.displayExistingCampaigns();
@@ -418,14 +464,18 @@
       loadCampaign(id, {showCopyBar=false}={}){
         const campaigns = this.getCampaigns();
         const c = campaigns[id];
-        if (!c){ 
-          // keep section open with copy bar (if URL contains campaign)
+        if (!c){
           document.getElementById('campaignSection').style.display='';
           this.currentCampaignId = null;
           document.getElementById('campaignInfo').innerHTML = `<div class="muted">קמפיין לא נמצא באחסון מקומי. אפשר <b>לייבא</b> מהניהול או ליצור חדש.</div>`;
           document.getElementById('chaptersGrid').innerHTML = '';
           document.getElementById('progressText').textContent = '';
           document.getElementById('progressFill').style.width = '0%';
+          // copy bar based on URL param
+          const base = location.origin + location.pathname;
+          const url = `${base}?campaign=${id}`;
+          document.getElementById('campaignUrl').textContent = url;
+          document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
           return;
         }
         this.currentCampaignId = id;
@@ -436,11 +486,9 @@
         const section = document.getElementById('campaignSection');
         section.style.display = '';
 
-        // Copy bar
         const base = location.origin + location.pathname;
         const url = `${base}?campaign=${campaign.id}`;
-        const urlBox = document.getElementById('campaignUrl');
-        urlBox.textContent = url;
+        document.getElementById('campaignUrl').textContent = url;
         document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
 
         const info = document.getElementById('campaignInfo');
@@ -466,7 +514,7 @@
           const ch = chapters[i];
           const div = document.createElement('div');
           div.className = `chip ${ch.status}`;
-          div.textContent = toHebNum(i, false); // no ׳/״
+          div.textContent = toHebNum(i, false); // no ׳/״ on buttons
           if (ch.status==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
           if (ch.status==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
           div.onclick = ()=> this.handleChapterClick(i);
@@ -483,7 +531,7 @@
         document.getElementById('progressFill').style.width = `${pct}%`;
       }
 
-      /* --------- SIMPLIFIED CLICK FLOW --------- */
+      /* --------- Simplified click flow --------- */
       async handleChapterClick(chapterNum){
         const campaigns = this.getCampaigns();
         const c = campaigns[this.currentCampaignId];
@@ -503,12 +551,18 @@
           chapter.takenByEmail=email;
           this.saveCampaigns(campaigns);
 
+          // Preload Sefaria text for the email
           fetchChapterFromSefaria(chapterNum).catch(()=>{});
+
+          // UI updates
           this.displayChapters(c.chapters);
           this.updateProgress(c.chapters);
           showToast(`פרק ${toHebNum(chapterNum,false)} נלקח`, 'success');
 
+          // open text with one “סיימתי” button
           this.openChapterActionModal(chapterNum, {mode:'taken'});
+
+          // emails (non-blocking; will use cleaned text)
           this.sendChapterTakenEmail(c, chapterNum, name, email);
           return;
         }
@@ -578,19 +632,26 @@
           message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים.`,
           subject: `קמפיין תהילים נוצר — ${campaign.name}`
         };
-        try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params);
+        try{
+          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params);
           showToast('המייל עם הקישור נשלח', 'success');
-        }catch(e){ showToast('שליחת המייל נכשלה', 'error'); console.warn(e); }
+        }catch(e){
+          showToast('שליחת המייל נכשלה', 'error');
+          console.warn(e);
+        }
       }
 
       async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
         if (typeof emailjs==='undefined' || !this.emailConfig) return;
+
+        // Ensure we have the cleaned text
         try { await fetchChapterFromSefaria(chapterNum); } catch(_) {}
         let chapterText = (this.tehillimTexts?.[chapterNum] || '').trim();
-        if (!chapterText || /יטען מה|יטען מס/.test(chapterText)) {
+        if (!chapterText) {
           chapterText = `תהילים — פרק ${toHebNum(chapterNum,false)}\n(לצפייה בטקסט המלא היכנסו לקישור הקמפיין)`;
         }
-        // Organizer notice
+
+        // Organizer notice (using your "completed" template id as earlier practice)
         if (this.emailConfig.chapterCompletedTemplateId){
           const orgParams = {
             to_email: campaign.organizerEmail, to_name: campaign.organizer, from_name: 'פלטפורמת תהילים',
@@ -601,18 +662,24 @@
           };
           try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
         }
-        // Participant text
+
+        // Send the text to participant
         if (userEmail && this.emailConfig.chapterTakenTemplateId){
           const campaignUrl = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
           const userParams = {
             to_email: userEmail, to_name: userName, from_name: 'פלטפורמת תהילים',
-            campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false), chapter_text: chapterText,
-            campaign_url: campaignUrl, message: `קיבלת את פרק ${toHebNum(chapterNum,false)} מתהילים עבור "${campaign.name}". לאחר הקריאה, חזור לאתר וסמן השלמה.`,
+            campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
+            chapter_text: chapterText,
+            campaign_url: campaignUrl,
+            message: `קיבלת את פרק ${toHebNum(chapterNum,false)} מתהילים עבור "${campaign.name}". לאחר הקריאה, חזור לאתר וסמן השלמה.`,
             subject: `פרק ${toHebNum(chapterNum,false)} — ${campaign.name}`
           };
-          try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterTakenTemplateId, userParams);
+          try{
+            await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterTakenTemplateId, userParams);
             showToast('טקסט הפרק נשלח בדוא״ל', 'success');
-          }catch(e){ showToast('שליחת טקסט הפרק נכשלה', 'error'); }
+          }catch(e){
+            showToast('שליחת טקסט הפרק נכשלה', 'error');
+          }
         }
       }
 
@@ -621,12 +688,16 @@
         const params = {
           to_name: campaign.organizer, to_email: campaign.organizerEmail,
           campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
-          user_name: userName, message: `${userName} סיים לקרוא פרק ${toHebNum(chapterNum,false)} בקמפיין "${campaign.name}"!`,
+          user_name: userName,
+          message: `${userName} סיים לקרוא פרק ${toHebNum(chapterNum,false)} בקמפיין "${campaign.name}"!`,
           subject: `פרק הושלם — ${campaign.name}`
         };
-        try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params);
+        try{
+          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params);
           showToast('המארגן קיבל עדכון על הסיום', 'success');
-        }catch(e){ showToast('שליחת עדכון הסיום נכשלה', 'error'); }
+        }catch(e){
+          showToast('שליחת עדכון הסיום נכשלה', 'error');
+        }
       }
 
       /* -------- Utils -------- */
@@ -703,7 +774,7 @@
     function showCreateForm(){ window.tehillimPlatform.showCreateForm(); }
     function closeChapterModal(){ window.tehillimPlatform.closeChapterModal(); }
 
-    /* Bootstrap */
+    // Bootstrap
     window.tehillimPlatform = new TehillimPlatform();
 
     /* ---------- Admin Log ---------- */
@@ -748,7 +819,7 @@
             <button class="btn small danger" data-action="delete">מחק</button>
           </div>
         `;
-        // attach handlers
+
         row.querySelector('[data-action="save"]').onclick = ()=>{
           const inputs = row.querySelectorAll('input[data-field]');
           inputs.forEach(inp=>{
@@ -759,17 +830,19 @@
           all[id] = c;
           window.tehillimPlatform.saveCampaigns(all);
           showToast('נשמר', 'success');
-          // refresh visible page if editing current campaign
           if (window.tehillimPlatform.currentCampaignId === id){
             window.tehillimPlatform.displayCampaign(c, {showCopyBar:true});
           }
         };
+
         row.querySelector('[data-action="open"]').onclick = ()=>{
           closeAdmin();
           window.tehillimPlatform.navigateToCampaign(id, {showCopyBar:true});
         };
+
         row.querySelector('[data-action="delete"]').onclick = async ()=>{
-          if (!confirm('למחוק את הקמפיין לצמיתות?')) return;
+          const ok = await confirmDialog('למחוק את הקמפיין לצמיתות?', 'מחיקה');
+          if (!ok) return;
           const all = window.tehillimPlatform.getCampaigns();
           delete all[id];
           window.tehillimPlatform.saveCampaigns(all);
@@ -782,10 +855,12 @@
           window.tehillimPlatform.displayExistingCampaigns();
           showToast('נמחק', 'success');
         };
+
         row.querySelector('[data-action="copy"]').onclick = ()=>{
           const url = `${location.origin}${location.pathname}?campaign=${id}`;
           navigator.clipboard.writeText(url).then(()=> showToast('קישור הועתק', 'success'));
         };
+
         list.appendChild(row);
       });
     }
@@ -834,12 +909,10 @@
     }
   </script>
 
-  <!-- 🔄 Sefaria loader: fetches a single פרק on demand; no API key needed -->
+  <!-- 🔄 Sefaria loader: fetches a chapter and cleans to plain text (each פסוק on a new line) -->
   <script>
-    // Simple in-memory cache
     const _psalmsCache = new Map();
 
-    // Fetch one chapter from Sefaria — returns numbered פסוקים as a single string
     async function fetchChapterFromSefaria(chNum){
       if (_psalmsCache.has(chNum)) return _psalmsCache.get(chNum);
 
@@ -849,11 +922,19 @@
       const data = await res.json();
 
       const verses = Array.isArray(data.he) ? data.he : [];
-      const numbered = verses
-        .map((line, i) => `(${toHebNum(i+1)}) ${String(line || '').trim()}`)
-        .join('\n');
 
-      const text = numbered || `פרק ${toHebNum(chNum,false)} — לא נמצא טקסט`;
+      // Clean every verse: strip tags and normalize spaces
+      const clean = verses.map((v, i) => {
+        let text = String(v || '')
+          .replace(/<[^>]+>/g, '')    // remove HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return `(${toHebNum(i+1,false)}) ${text}`;
+      });
+
+      const text = clean.join('\n');
+
       _psalmsCache.set(chNum, text);
 
       // also update the platform store so UI/email sees it
