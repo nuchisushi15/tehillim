@@ -139,7 +139,7 @@
 
   <!-- Confirm modal (reusable) -->
   <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-    <div class="backdrop"></div>
+    <div class="backdrop" onclick="closeConfirm()"></div>
     <div class="dialog">
       <header>
         <h3 id="confirmTitle" style="margin:0">אישור</h3>
@@ -312,7 +312,7 @@
       else if (num === 16){ result += 'טז'; num = 0; }
       else{ [90,80,70,60,50,40,30,20,10].forEach(t=>{ while(num>=t){ result += H_TENS[t]; num -= t; } }); }
       if (num>0) result += H_UNITS[num] || '';
-      if (!punctuation) return result;                   // <- we’ll call with false for CHAPTER BUTTONS
+      if (!punctuation) return result;                   // ← no ׳/״ when false
       if (result.length >= 2){ return result.slice(0,-1) + '״' + result.slice(-1); }
       if (result.length === 1){ return result + '׳'; }
       return result;
@@ -498,7 +498,7 @@
           chapter.takenByEmail=email;
           this.saveCampaigns(campaigns);
 
-          // emails (non-blocking)
+          // emails (non-blocking but waits for text readiness inside)
           this.sendChapterTakenEmail(c, chapterNum, name, email);
 
           // refresh
@@ -580,7 +580,26 @@
       async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
         if (typeof emailjs==='undefined' || !this.emailConfig) return;
 
-        // notify organizer
+        // --- Wait up to 6s for the TXT to load (if promise exists) ---
+        async function waitForReady(p, ms=6000){
+          if (!p) return;
+          try {
+            await Promise.race([
+              p,
+              new Promise((_, rej)=> setTimeout(()=> rej(new Error("timeout")), ms))
+            ]);
+          } catch (_) { /* ignore timeout; best-effort below */ }
+        }
+        await waitForReady(window.tehillimTextReady);
+
+        // Ensure we have the chapter text and not the placeholder
+        let chapterText = (this.tehillimTexts?.[chapterNum] || "").trim();
+        const isPlaceholder = /יטען מה־TXT/.test(chapterText) || chapterText.length < 10;
+        if (isPlaceholder) {
+          chapterText = `תהילים — פרק ${toHebNum(chapterNum,false)}\n(לצפייה בטקסט המלא היכנסו לקישור הקמפיין)`;
+        }
+
+        // 1) Notify organizer
         if (this.emailConfig.chapterCompletedTemplateId){
           const orgParams = {
             to_email: campaign.organizerEmail,
@@ -596,16 +615,17 @@
           try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
         }
 
-        // send text to participant
+        // 2) Send the chapter text to participant
         if (userEmail && this.emailConfig.chapterTakenTemplateId){
+          const campaignUrl = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
           const userParams = {
             to_email: userEmail,
             to_name: userName,
             from_name: 'פלטפורמת תהילים',
             campaign_name: campaign.name,
             chapter_number: toHebNum(chapterNum, false),
-            chapter_text: this.tehillimTexts[chapterNum],
-            campaign_url: `${location.origin}${location.pathname}?campaign=${campaign.id}`,
+            chapter_text: chapterText,
+            campaign_url: campaignUrl,
             message: `קיבלת את פרק ${toHebNum(chapterNum,false)} מתהילים עבור "${campaign.name}". לאחר הקריאה, חזור לאתר וסמן השלמה.`,
             subject: `פרק ${toHebNum(chapterNum,false)} — ${campaign.name}`
           };
@@ -670,7 +690,6 @@
         const now = Date.now();
         const DAY = 24*60*60*1000;
 
-        // filter to last 24h
         const recent = ids.filter(id=>{
           const createdMs = new Date(campaigns[id].created).getTime();
           return (now - createdMs) <= DAY;
@@ -717,8 +736,14 @@
     window.tehillimPlatform = new TehillimPlatform();
   </script>
 
-  <!-- 🔄 TXT loader: parses your file and numbers פסוקים -->
+  <!-- 🔄 TXT loader: parses your file and numbers פסוקים; exposes readiness promise -->
   <script>
+    // Readiness promise to ensure emails wait for full text
+    window.tehillimTextReady = new Promise((resolve, reject) => {
+      window._resolveTehillimTextReady = resolve;
+      window._rejectTehillimTextReady = reject;
+    });
+
     (async () => {
       const txtUrl = "https://raw.githubusercontent.com/nuchisushi15/tehillim/refs/heads/main/Psalms%20-%20he%20-%20Tanach%20with%20Nikkud%20(1).txt";
 
@@ -731,7 +756,6 @@
 
       function numberVersesHeb(arr) {
         if (!Array.isArray(arr)) return String(arr || "").trim();
-        // verses will keep punctuation in numerals by default
         return arr.map((v, i) => `(${toHebNum(i + 1)}) ${String(v || "").trim()}`).join("\n");
       }
 
@@ -822,6 +846,11 @@
         if (count >= 150) {
           window.tehillimPlatform.tehillimTexts = texts;
 
+          // signal READY for email sending
+          if (typeof window._resolveTehillimTextReady === "function") {
+            window._resolveTehillimTextReady(true);
+          }
+
           if (window.tehillimPlatform.currentChapterNum) {
             const n = window.tehillimPlatform.currentChapterNum;
             document.getElementById("chapterContent").textContent =
@@ -830,9 +859,15 @@
           console.log("✅ Loaded Tehillim from TXT with Hebrew-letter פסוקים. Chapters:", count);
         } else {
           console.warn("⚠️ Only parsed", count, "chapters (expected 150). Check TXT format.");
+          if (typeof window._rejectTehillimTextReady === "function") {
+            window._rejectTehillimTextReady(new Error("Not all chapters parsed"));
+          }
         }
       } catch (err) {
         console.error("Failed to load TXT:", err);
+        if (typeof window._rejectTehillimTextReady === "function") {
+          window._rejectTehillimTextReady(err);
+        }
       }
     })();
   </script>
