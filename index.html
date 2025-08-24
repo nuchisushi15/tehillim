@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>פלטפורמת תהילים - Tehillim Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/emailjs/3.2.0/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -65,7 +66,7 @@
             color: #555;
         }
 
-        input[type="text"], textarea, select {
+        input[type="text"], input[type="email"], textarea, select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e1e5e9;
@@ -75,7 +76,11 @@
             direction: rtl;
         }
 
-        input[type="text"]:focus, textarea:focus, select:focus {
+        input[type="email"] {
+            direction: ltr;
+        }
+
+        input[type="text"]:focus, input[type="email"]:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -229,6 +234,67 @@
             color: #0c5460;
         }
 
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .chapter-text {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            direction: rtl;
+            text-align: right;
+            line-height: 2;
+            font-size: 18px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            direction: rtl;
+        }
+
+        .close {
+            color: #aaa;
+            float: left;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .email-setup {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
         @media (max-width: 768px) {
             .chapters-grid {
                 grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
@@ -242,6 +308,11 @@
             .header h1 {
                 font-size: 2em;
             }
+
+            .modal-content {
+                margin: 2% auto;
+                width: 95%;
+            }
         }
     </style>
 </head>
@@ -250,6 +321,26 @@
         <div class="header">
             <h1>פלטפורמת תהילים</h1>
             <p>יוצרים קמפיינים ומשלימים תהילים יחד</p>
+        </div>
+
+        <!-- Email Setup Section -->
+        <div id="emailSetup" class="card email-setup" style="display: none;">
+            <h3>הגדרת שירות מייל (חד פעמי)</h3>
+            <p>כדי לקבל התראות במייל, יש להזין את פרטי EmailJS:</p>
+            <div class="form-group">
+                <label for="emailjsUserId">EmailJS Public Key:</label>
+                <input type="text" id="emailjsUserId" value="d_LsqV-KBZuAeuCjf">
+            </div>
+            <div class="form-group">
+                <label for="emailjsServiceId">EmailJS Service ID:</label>
+                <input type="text" id="emailjsServiceId" value="service_p76h23d">
+            </div>
+            <div class="form-group">
+                <label for="emailjsTemplateId">EmailJS Template ID:</label>
+                <input type="text" id="emailjsTemplateId" value="template_46i4yl5">
+            </div>
+            <button class="btn" onclick="saveEmailConfig()">שמור הגדרות</button>
+            <button class="btn btn-secondary" onclick="hideEmailSetup()">דלג לעת עתה</button>
         </div>
 
         <!-- Create Campaign Section -->
@@ -268,15 +359,19 @@
                     <label for="organizerName">שם המארגן:</label>
                     <input type="text" id="organizerName" required placeholder="השם שלך">
                 </div>
+                <div class="form-group">
+                    <label for="organizerEmail">מייל המארגן:</label>
+                    <input type="email" id="organizerEmail" required placeholder="your@email.com">
+                </div>
                 <button type="submit" class="btn">צור קמפיין</button>
             </form>
         </div>
 
         <!-- Campaign URL Display -->
         <div id="urlSection" class="card hidden">
-            <h3>קישור הקמפיין נוצר בהצלחה!</h3>
+            <h3>קמפיין נוצר בהצלחה!</h3>
             <div class="alert alert-success">
-                שתף את הקישור הזה עם אחרים כדי שיוכלו להצטרף לקמפיין
+                שתף את הקישור הזה עם אחרים כדי שיוכלו להצטרף לקמפיין. נשלח מייל עם הקישור לכתובת שהזנת.
             </div>
             <div class="url-display" id="campaignUrl"></div>
             <button class="btn btn-secondary" onclick="copyUrl()">העתק קישור</button>
@@ -294,7 +389,7 @@
 
             <h3>בחר פרקי תהילים:</h3>
             <div class="alert alert-info">
-                לחץ על מספר פרק כדי לקחת אותו על עצמך. לאחר שסיימת לקרוא, לחץ שוב כדי לסמן כמושלם.
+                לחץ על מספר פרק כדי לקחת אותו על עצמך. תוכל לקרוא את הטקסט ולסמן כמושלם לאחר הקריאה.
             </div>
             <div class="chapters-grid" id="chaptersGrid"></div>
             
@@ -313,17 +408,63 @@
         </div>
     </div>
 
+    <!-- Chapter Text Modal -->
+    <div id="chapterModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChapterModal()">&times;</span>
+            <h2 id="chapterTitle"></h2>
+            <div id="chapterContent" class="chapter-text"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-secondary" id="completeChapterBtn">סיימתי לקרוא - סמן כמושלם</button>
+                <button class="btn" onclick="closeChapterModal()">סגור</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         class TehillimPlatform {
             constructor() {
                 this.currentCampaignId = null;
+                this.currentChapterNum = null;
+                this.emailConfig = null;
+                this.tehillimTexts = this.getTehillimTexts(); // Simplified texts for demo
                 this.init();
             }
 
             init() {
+                this.loadEmailConfig();
+                this.initEmailJS();
                 this.loadFromUrl();
                 this.displayExistingCampaigns();
                 this.setupEventListeners();
+            }
+
+            loadEmailConfig() {
+                // Auto-configure with your EmailJS settings
+                const defaultConfig = {
+                    userId: 'd_LsqV-KBZuAeuCjf',
+                    serviceId: 'service_p76h23d',
+                    templateId: 'template_46i4yl5'
+                };
+
+                const savedConfig = localStorage.getItem('tehillimEmailConfig');
+                if (savedConfig) {
+                    this.emailConfig = JSON.parse(savedConfig);
+                } else {
+                    // Use default config
+                    this.emailConfig = defaultConfig;
+                    // Save to localStorage
+                    localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
+                }
+                
+                // Hide setup section since we have complete config
+                document.getElementById('emailSetup').style.display = 'none';
+            }
+
+            initEmailJS() {
+                if (this.emailConfig) {
+                    emailjs.init(this.emailConfig.userId);
+                }
             }
 
             setupEventListeners() {
@@ -345,6 +486,7 @@
                 const name = document.getElementById('campaignName').value;
                 const description = document.getElementById('campaignDescription').value;
                 const organizer = document.getElementById('organizerName').value;
+                const organizerEmail = document.getElementById('organizerEmail').value;
 
                 const campaignId = this.generateId();
                 const campaign = {
@@ -352,6 +494,7 @@
                     name: name,
                     description: description,
                     organizer: organizer,
+                    organizerEmail: organizerEmail,
                     created: new Date().toISOString(),
                     chapters: this.initializeChapters()
                 };
@@ -361,8 +504,104 @@
                 campaigns[campaignId] = campaign;
                 localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
 
+                // Send email to organizer
+                this.sendCampaignCreatedEmail(campaign);
+
                 // Show URL
                 this.showCampaignUrl(campaignId);
+            }
+
+            async sendCampaignCreatedEmail(campaign) {
+                if (!this.emailConfig) return;
+
+                const campaignUrl = `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`;
+                
+                const templateParams = {
+                    to_name: campaign.organizer,
+                    to_email: campaign.organizerEmail,
+                    campaign_name: campaign.name,
+                    campaign_url: campaignUrl,
+                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`
+                };
+
+                try {
+                    await emailjs.send(
+                        this.emailConfig.serviceId,
+                        this.emailConfig.templateId,
+                        templateParams
+                    );
+                    console.log('Campaign creation email sent');
+                } catch (error) {
+                    console.error('Email send failed:', error);
+                }
+            }
+
+            async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail) {
+                if (!this.emailConfig) return;
+
+                const templateParams = {
+                    to_name: campaign.organizer,
+                    to_email: campaign.organizerEmail,
+                    campaign_name: campaign.name,
+                    chapter_number: chapterNum,
+                    user_name: userName,
+                    message: `${userName} לקח על עצמו לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"`
+                };
+
+                try {
+                    await emailjs.send(
+                        this.emailConfig.serviceId,
+                        this.emailConfig.templateId,
+                        templateParams
+                    );
+                } catch (error) {
+                    console.error('Email send failed:', error);
+                }
+
+                // Send chapter text to user
+                if (userEmail) {
+                    const userParams = {
+                        to_name: userName,
+                        to_email: userEmail,
+                        campaign_name: campaign.name,
+                        chapter_number: chapterNum,
+                        chapter_text: this.tehillimTexts[chapterNum],
+                        message: `פרק ${chapterNum} מתהילים עבור קמפיין "${campaign.name}"`
+                    };
+
+                    try {
+                        await emailjs.send(
+                            this.emailConfig.serviceId,
+                            this.emailConfig.templateId,
+                            userParams
+                        );
+                    } catch (error) {
+                        console.error('Chapter email send failed:', error);
+                    }
+                }
+            }
+
+            async sendChapterCompletedEmail(campaign, chapterNum, userName) {
+                if (!this.emailConfig) return;
+
+                const templateParams = {
+                    to_name: campaign.organizer,
+                    to_email: campaign.organizerEmail,
+                    campaign_name: campaign.name,
+                    chapter_number: chapterNum,
+                    user_name: userName,
+                    message: `${userName} סיים לקרוא פרق ${chapterNum} בקמפיין "${campaign.name}"!`
+                };
+
+                try {
+                    await emailjs.send(
+                        this.emailConfig.serviceId,
+                        this.emailConfig.templateId,
+                        templateParams
+                    );
+                } catch (error) {
+                    console.error('Email send failed:', error);
+                }
             }
 
             initializeChapters() {
@@ -371,6 +610,7 @@
                     chapters[i] = {
                         status: 'available', // available, taken, completed
                         takenBy: null,
+                        takenByEmail: null,
                         completedAt: null
                     };
                 }
@@ -438,7 +678,7 @@
                     const btn = document.createElement('div');
                     btn.className = `chapter-btn ${chapter.status}`;
                     btn.textContent = i;
-                    btn.onclick = () => this.toggleChapter(i);
+                    btn.onclick = () => this.handleChapterClick(i);
                     
                     if (chapter.status === 'taken') {
                         btn.title = `נלקח על ידי: ${chapter.takenBy || 'אלמוני'}`;
@@ -450,41 +690,94 @@
                 }
             }
 
-            toggleChapter(chapterNum) {
+            handleChapterClick(chapterNum) {
                 const campaigns = this.getCampaigns();
                 const campaign = campaigns[this.currentCampaignId];
                 const chapter = campaign.chapters[chapterNum];
 
                 if (chapter.status === 'available') {
-                    // Take the chapter
-                    const name = prompt('הכנס את שמך:');
-                    if (name) {
-                        chapter.status = 'taken';
-                        chapter.takenBy = name;
-                    } else {
-                        return;
-                    }
+                    this.takeChapter(chapterNum);
                 } else if (chapter.status === 'taken') {
-                    // Complete the chapter
-                    const confirm = window.confirm(`האם סיימת לקרוא פרק ${chapterNum}?`);
-                    if (confirm) {
-                        chapter.status = 'completed';
-                        chapter.completedAt = new Date().toISOString();
-                    } else {
-                        return;
-                    }
+                    this.showChapterText(chapterNum);
                 } else {
-                    // Chapter is completed
                     alert('פרק זה כבר הושלם');
-                    return;
                 }
+            }
+
+            takeChapter(chapterNum) {
+                const name = prompt('הכנס את שמך:');
+                if (!name) return;
+
+                const email = prompt('הכנס את כתובת המייל שלך:');
+                if (!email) return;
+
+                const campaigns = this.getCampaigns();
+                const campaign = campaigns[this.currentCampaignId];
+                const chapter = campaign.chapters[chapterNum];
+
+                chapter.status = 'taken';
+                chapter.takenBy = name;
+                chapter.takenByEmail = email;
 
                 // Save changes
                 localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
                 
+                // Send emails
+                this.sendChapterTakenEmail(campaign, chapterNum, name, email);
+
                 // Refresh display
                 this.displayChapters(campaign.chapters);
                 this.updateProgress(campaign.chapters);
+
+                // Show chapter text
+                this.showChapterText(chapterNum);
+            }
+
+            showChapterText(chapterNum) {
+                this.currentChapterNum = chapterNum;
+                
+                document.getElementById('chapterTitle').textContent = `תהילים פרק ${chapterNum}`;
+                document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum];
+                document.getElementById('chapterModal').style.display = 'block';
+
+                // Set up complete button
+                document.getElementById('completeChapterBtn').onclick = () => this.completeChapter(chapterNum);
+            }
+
+            completeChapter(chapterNum) {
+                const campaigns = this.getCampaigns();
+                const campaign = campaigns[this.currentCampaignId];
+                const chapter = campaign.chapters[chapterNum];
+
+                if (chapter.status !== 'taken') {
+                    alert('לא ניתן לסמן פרק שלא נלקח');
+                    return;
+                }
+
+                const confirm = window.confirm(`האם סיימת לקרוא פרק ${chapterNum}?`);
+                if (!confirm) return;
+
+                chapter.status = 'completed';
+                chapter.completedAt = new Date().toISOString();
+
+                // Save changes
+                localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
+
+                // Send completion email
+                this.sendChapterCompletedEmail(campaign, chapterNum, chapter.takenBy);
+
+                // Refresh display
+                this.displayChapters(campaign.chapters);
+                this.updateProgress(campaign.chapters);
+
+                // Close modal
+                this.closeChapterModal();
+
+                alert('תודה על השלמת הפרק!');
+            }
+
+            closeChapterModal() {
+                document.getElementById('chapterModal').style.display = 'none';
             }
 
             updateProgress(chapters) {
@@ -536,9 +829,60 @@
                 // Clear URL parameter
                 window.history.pushState({}, document.title, window.location.pathname);
             }
+
+            getTehillimTexts() {
+                // This is a simplified version with just a few sample texts
+                // In a real implementation, you'd have all 150 chapters
+                const texts = {};
+                for (let i = 1; i <= 150; i++) {
+                    texts[i] = `זהו טקסט לדוגמה של פרק ${i} מתהילים. בגרסה מלאה יהיה כאן הטקסט המלא של כל פרק.\n\nכאן יופיע הטקסט המלא של פרק ${i} בתהילים כפי שנכתב במקורות היהדות.\n\n(בגרסה זו מוצג טקסט לדוגמה בלבד)`;
+                }
+                
+                // Sample actual text for chapter 1
+                texts[1] = `אַשְׁרֵי הָאִישׁ אֲשֶׁר לֹא הָלַךְ בַּעֲצַת רְשָׁעִים וּבְדֶרֶךְ חַטָּאִים לֹא עָמָד וּבְמוֹשַׁב לֵצִים לֹא יָשָׁב:
+כִּי אִם בְּתוֹרַת יְהוָה חֶפְצוֹ וּבְתוֹרָתוֹ יֶהְגֶּה יוֹמָם וָלָיְלָה:
+וְהָיָה כְּעֵץ שָׁתוּל עַל פַּלְגֵי מָיִם אֲשֶׁר פִּרְיוֹ יִתֵּן בְּעִתּוֹ וְעָלֵהוּ לֹא יִבּוֹל וְכֹל אֲשֶׁר יַעֲשֶׂה יַצְלִיחַ:
+לֹא כֵן הָרְשָׁעִים כִּי אִם כַּמֹּץ אֲשֶׁר תִּדְּפֶנּוּ רוּחַ:
+עַל כֵּן לֹא יָקֻמוּ רְשָׁעִים בַּמִּשְׁפָּט וְחַטָּאִים בַּעֲדַת צַדִּיקִים:
+כִּי יוֹדֵעַ יְהוָה דֶּרֶךְ צַדִּיקִים וְדֶרֶךְ רְשָׁעִים תֹּאבֵד:`;
+
+                // Sample text for chapter 23 (popular psalm)
+                texts[23] = `מִזְמוֹר לְדָוִד יְהוָה רֹעִי לֹא אֶחְסָר:
+בִּנְאוֹת דֶּשֶׁא יַרְבִּיצֵנִי עַל מֵי מְנֻחוֹת יְנַהֲלֵנִי:
+נַפְשִׁי יְשׁוֹבֵב יַנְחֵנִי בְמַעְגְּלֵי צֶדֶק לְמַעַן שְׁמוֹ:
+גַּם כִּי אֵלֵךְ בְּגֵיא צַלְמָוֶת לֹא אִירָא רָע כִּי אַתָּה עִמָּדִי שִׁבְטְךָ וּמִשְׁעַנְתֶּךָ הֵמָּה יְנַחֲמֻנִי:
+תַּעֲרֹךְ לְפָנַי שֻׁלְחָן נֶגֶד צֹרְרָי דִּשַּׁנְתָּ בַשֶּׁמֶן רֹאשִׁי כּוֹסִי רְוָיָה:
+אַךְ טוֹב וָחֶסֶד יִרְדְּפוּנִי כָּל יְמֵי חַיָּי וְשַׁבְתִּי בְּבֵית יְהוָה לְאֹרֶךְ יָמִים:`;
+
+                return texts;
+            }
         }
 
         // Global functions
+        function saveEmailConfig() {
+            const userId = document.getElementById('emailjsUserId').value;
+            const serviceId = document.getElementById('emailjsServiceId').value;
+            const templateId = document.getElementById('emailjsTemplateId').value;
+
+            if (!userId || !serviceId || !templateId) {
+                alert('יש למלא את כל השדות');
+                return;
+            }
+
+            const config = { userId, serviceId, templateId };
+            localStorage.setItem('tehillimEmailConfig', JSON.stringify(config));
+            
+            window.tehillimPlatform.emailConfig = config;
+            window.tehillimPlatform.initEmailJS();
+            
+            document.getElementById('emailSetup').style.display = 'none';
+            alert('הגדרות המייל נשמרו בהצלחה!');
+        }
+
+        function hideEmailSetup() {
+            document.getElementById('emailSetup').style.display = 'none';
+        }
+
         function copyUrl() {
             const url = document.getElementById('campaignUrl').textContent;
             navigator.clipboard.writeText(url).then(() => {
@@ -547,7 +891,17 @@
         }
 
         function goToCampaign() {
-            window.location.href = document.getElementById('campaignUrl').textContent;
+            const campaigns = window.tehillimPlatform.getCampaigns();
+            const campaign = campaigns[window.tehillimPlatform.currentCampaignId];
+            
+            // Hide URL section and show campaign
+            document.getElementById('urlSection').classList.add('hidden');
+            window.tehillimPlatform.displayCampaign(campaign);
+            
+            // Update URL without page reload
+            const baseUrl = window.location.origin + window.location.pathname;
+            const newUrl = `${baseUrl}?campaign=${window.tehillimPlatform.currentCampaignId}`;
+            window.history.pushState({}, document.title, newUrl);
         }
 
         function shareUrl() {
@@ -567,8 +921,20 @@
             }
         }
 
+        function closeChapterModal() {
+            document.getElementById('chapterModal').style.display = 'none';
+        }
+
         // Initialize the platform
         window.tehillimPlatform = new TehillimPlatform();
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('chapterModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
     </script>
 </body>
 </html>
