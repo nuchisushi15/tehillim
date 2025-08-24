@@ -326,22 +326,37 @@
         <!-- Email Setup Section -->
         <div id="emailSetup" class="card email-setup">
             <h3>הגדרת שירות מייל</h3>
-            <p>כדי לקבל התראות במייל, יש להזין את פרטי EmailJS החדשים:</p>
-            <div class="alert alert-warning">
-                <strong>שגיאת Public Key!</strong> יש לעדכן את המפתח הציבורי מלוח הבקרה של EmailJS
+            <p>יש צורך ב-3 תבניות מייל שונות. צור אותן ב-EmailJS והכנס את המזהים:</p>
+            <div class="alert alert-info">
+                <strong>תבניות נדרשות:</strong><br>
+                1. יצירת קמפיין - לשליחה למארגן<br>
+                2. נטילת פרק - לשליחה למשתתף עם טקסט הפרק<br>
+                3. השלמת פרק - לשליחה למארגן
             </div>
+            
             <div class="form-group">
                 <label for="emailjsUserId">EmailJS Public Key:</label>
-                <input type="text" id="emailjsUserId" value="d_LsqV-KBZuAeuCjf" placeholder="הכנס את המפתח הציבורי החדש">
+                <input type="text" id="emailjsUserId" value="d_LsqV-KBZuAeuCjf">
             </div>
             <div class="form-group">
                 <label for="emailjsServiceId">EmailJS Service ID:</label>
                 <input type="text" id="emailjsServiceId" value="service_p76h23d">
             </div>
+            
+            <h4>תבניות מייל:</h4>
             <div class="form-group">
-                <label for="emailjsTemplateId">EmailJS Template ID:</label>
-                <input type="text" id="emailjsTemplateId" value="template_46i4yl5">
+                <label for="campaignCreatedTemplateId">תבנית יצירת קמפיין (Campaign Created):</label>
+                <input type="text" id="campaignCreatedTemplateId" value="template_0hmmrlk">
             </div>
+            <div class="form-group">
+                <label for="chapterTakenTemplateId">תבנית נטילת פרק (Chapter Taken):</label>
+                <input type="text" id="chapterTakenTemplateId" value="template_swui2zf">
+            </div>
+            <div class="form-group">
+                <label for="chapterCompletedTemplateId">תבנית השלמת פרק (Chapter Completed):</label>
+                <input type="text" id="chapterCompletedTemplateId" value="template_j01dkdf">
+            </div>
+            
             <button class="btn" onclick="saveEmailConfig()">שמור הגדרות</button>
             <button class="btn btn-secondary" onclick="hideEmailSetup()">דלג לעת עתה</button>
         </div>
@@ -458,16 +473,27 @@
             }
 
             loadEmailConfig() {
-                // Show email setup since we need to update the public key
+                // Auto-configure with your EmailJS settings including all 3 templates
+                const defaultConfig = {
+                    userId: 'd_LsqV-KBZuAeuCjf',
+                    serviceId: 'service_p76h23d',
+                    campaignCreatedTemplateId: 'template_0hmmrlk',
+                    chapterTakenTemplateId: 'template_swui2zf',
+                    chapterCompletedTemplateId: 'template_j01dkdf'
+                };
+
                 const savedConfig = localStorage.getItem('tehillimEmailConfig');
                 if (savedConfig) {
                     this.emailConfig = JSON.parse(savedConfig);
-                    // Still show setup for user to verify/update credentials
-                    document.getElementById('emailSetup').style.display = 'block';
                 } else {
-                    // Show setup section for initial configuration
-                    document.getElementById('emailSetup').style.display = 'block';
+                    // Use default config with all templates
+                    this.emailConfig = defaultConfig;
+                    // Save to localStorage
+                    localStorage.setItem('tehillimEmailConfig', JSON.stringify(defaultConfig));
                 }
+                
+                // Hide setup section since we have complete config
+                document.getElementById('emailSetup').style.display = 'none';
             }
 
             initEmailJS() {
@@ -568,92 +594,91 @@
             }
 
             async sendCampaignCreatedEmail(campaign) {
-                console.log('Attempting to send campaign creation email...');
-                console.log('Email config:', JSON.stringify(this.emailConfig, null, 2));
+                console.log('Sending campaign created email...');
                 
-                if (typeof emailjs === 'undefined') {
-                    console.error('EmailJS library not loaded');
-                    alert('שירות המייל לא זמין - הקמפיין נוצר אך המייל לא נשלח');
-                    return;
-                }
-                
-                if (!this.emailConfig) {
-                    console.error('No email config found');
-                    alert('אין הגדרות מייל - הקמפיין נוצר אך המייל לא נשלח');
+                if (typeof emailjs === 'undefined' || !this.emailConfig || !this.emailConfig.campaignCreatedTemplateId) {
+                    console.log('EmailJS or campaign template not configured');
                     return;
                 }
 
                 const campaignUrl = `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`;
                 
                 const templateParams = {
-                    user_name: campaign.organizer,
-                    user_email: campaign.organizerEmail,
+                    to_email: campaign.organizerEmail,
+                    to_name: campaign.organizer,
                     from_name: "פלטפורמת תהילים",
                     campaign_name: campaign.name,
                     campaign_url: campaignUrl,
-                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`
+                    message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים כדי שיוכלו להצטרף.`,
+                    subject: `קמפיין תהילים נוצר - ${campaign.name}`
                 };
 
-                console.log('Email template params:', JSON.stringify(templateParams, null, 2));
-
                 try {
-                    console.log('Sending email with EmailJS...');
-                    const result = await emailjs.send(
+                    await emailjs.send(
                         this.emailConfig.serviceId,
-                        this.emailConfig.templateId,
+                        this.emailConfig.campaignCreatedTemplateId,
                         templateParams
                     );
-                    console.log('Campaign creation email sent successfully:', result);
+                    console.log('Campaign creation email sent');
                     alert('קמפיין נוצר בהצלחה! נשלח מייל עם הקישור');
                 } catch (error) {
-                    console.error('Email send failed:', error);
-                    alert('הקמפיין נוצר אך המייל לא נשלח. שגיאה: ' + (error.text || error.message));
+                    console.error('Campaign email failed:', error);
+                    alert('הקמפיין נוצר אך המייל לא נשלח: ' + (error.text || error.message));
                 }
             }
 
             async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail) {
                 if (typeof emailjs === 'undefined' || !this.emailConfig) return;
 
-                const templateParams = {
-                    user_name: campaign.organizer,
-                    user_email: campaign.organizerEmail,
-                    from_name: "פלטפורמת תהילים",
-                    campaign_name: campaign.name,
-                    chapter_number: chapterNum,
-                    participant_name: userName,
-                    message: `${userName} לקח על עצמו לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"`
-                };
-
-                try {
-                    await emailjs.send(
-                        this.emailConfig.serviceId,
-                        this.emailConfig.templateId,
-                        templateParams
-                    );
-                } catch (error) {
-                    console.error('Email send failed:', error);
-                }
-
-                // Send chapter text to user
-                if (userEmail) {
-                    const userParams = {
-                        user_name: userName,
-                        user_email: userEmail,
+                // Send notification to campaign organizer
+                if (this.emailConfig.chapterCompletedTemplateId) {
+                    const organizerParams = {
+                        to_email: campaign.organizerEmail,
+                        to_name: campaign.organizer,
                         from_name: "פלטפורמת תהילים",
                         campaign_name: campaign.name,
                         chapter_number: chapterNum,
-                        chapter_text: this.tehillimTexts[chapterNum],
-                        message: `פרק ${chapterNum} מתהילים עבור קמפיין "${campaign.name}"`
+                        participant_name: userName,
+                        participant_email: userEmail,
+                        message: `${userName} לקח על עצמו לקרוא פרק ${chapterNum} בקמפיין "${campaign.name}"`,
+                        subject: `פרק נלקח - ${campaign.name}`
                     };
 
                     try {
                         await emailjs.send(
                             this.emailConfig.serviceId,
-                            this.emailConfig.templateId,
+                            this.emailConfig.chapterCompletedTemplateId,
+                            organizerParams
+                        );
+                        console.log('Organizer notification sent');
+                    } catch (error) {
+                        console.error('Organizer notification failed:', error);
+                    }
+                }
+
+                // Send chapter text to participant
+                if (userEmail && this.emailConfig.chapterTakenTemplateId) {
+                    const userParams = {
+                        to_email: userEmail,
+                        to_name: userName,
+                        from_name: "פלטפורמת תהילים",
+                        campaign_name: campaign.name,
+                        chapter_number: chapterNum,
+                        chapter_text: this.tehillimTexts[chapterNum],
+                        campaign_url: `${window.location.origin}${window.location.pathname}?campaign=${campaign.id}`,
+                        message: `קיבלת את פרק ${chapterNum} מתהילים עבור קמפיין "${campaign.name}". אחרי שתסיים לקרוא, חזור לאתר וסמן כמושלם.`,
+                        subject: `פרק ${chapterNum} מתהילים - ${campaign.name}`
+                    };
+
+                    try {
+                        await emailjs.send(
+                            this.emailConfig.serviceId,
+                            this.emailConfig.chapterTakenTemplateId,
                             userParams
                         );
+                        console.log('Chapter text sent to participant');
                     } catch (error) {
-                        console.error('Chapter email send failed:', error);
+                        console.error('Chapter text email failed:', error);
                     }
                 }
             }
@@ -951,21 +976,31 @@
         function saveEmailConfig() {
             const userId = document.getElementById('emailjsUserId').value;
             const serviceId = document.getElementById('emailjsServiceId').value;
-            const templateId = document.getElementById('emailjsTemplateId').value;
+            const campaignCreatedTemplateId = document.getElementById('campaignCreatedTemplateId').value;
+            const chapterTakenTemplateId = document.getElementById('chapterTakenTemplateId').value;
+            const chapterCompletedTemplateId = document.getElementById('chapterCompletedTemplateId').value;
 
-            if (!userId || !serviceId || !templateId) {
+            if (!userId || !serviceId || !campaignCreatedTemplateId || !chapterTakenTemplateId || !chapterCompletedTemplateId) {
                 alert('יש למלא את כל השדות');
                 return;
             }
 
-            const config = { userId, serviceId, templateId };
+            console.log('Saving email config with multiple templates');
+
+            const config = { 
+                userId, 
+                serviceId, 
+                campaignCreatedTemplateId, 
+                chapterTakenTemplateId, 
+                chapterCompletedTemplateId 
+            };
             localStorage.setItem('tehillimEmailConfig', JSON.stringify(config));
             
             window.tehillimPlatform.emailConfig = config;
             window.tehillimPlatform.initEmailJS();
             
             document.getElementById('emailSetup').style.display = 'none';
-            alert('הגדרות המייל נשמרו בהצלחה!');
+            alert('הגדרות המייל נשמרו בהצלחה! המערכת מוכנה לשימוש.');
         }
 
         function hideEmailSetup() {
