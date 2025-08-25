@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>פלטפורמת תהילים — עיצוב מעודכן</title>
+  <title>פלטפורמת תהילים — עם שמירה בענן</title>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
   <style>
@@ -29,12 +29,1163 @@
       color:var(--ink);
     }
 
+    /* Backend status indicator */
+    .backend-status{
+      position: fixed;
+      top: 60px;
+      left: 10px;
+      z-index: 1000;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .backend-status.online{
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .backend-status.offline{
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
     /* Toasts */
     .toasts{position:fixed; top:14px; right:14px; z-index:9999; display:grid; gap:8px}
     .toast{
       background:#fff; color:#111; border:1px solid #e5e7eb; border-inline-start:4px solid var(--brand);
       border-radius:12px; box-shadow:var(--shadow); padding:10px 12px; min-width:240px;
       animation:slideIn .2s ease;
+    }
+    .toast.success{border-inline-start-color:var(--accent)}
+    .toast.error{border-inline-start-color:var(--danger)}
+    @keyframes slideIn{from{transform:translateY(-10px); opacity:.0} to{transform:translateY(0); opacity:1}}
+
+    /* Confirm modal */
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:50; }
+    .modal.on{ display:flex }
+    .backdrop{ position:absolute; inset:0; background:rgba(17,24,39,.55); backdrop-filter: blur(4px); }
+    .dialog{ position:relative; width:min(880px, 96vw); background:#fff; border-radius:16px; box-shadow: 0 20px 60px rgba(17,24,39,.35); overflow:hidden }
+    .dialog header{ padding:14px 16px; border-bottom:1px solid #eef0f6; background:#fff; display:flex; align-items:center; gap:10px }
+    .dialog .content{ padding:16px }
+    .dialog .actions{ padding:12px 16px; display:flex; gap:8px; justify-content:flex-start; border-top:1px solid #eef0f6; background:#fafafa }
+    .close-x{ position:absolute; left:12px; top:10px; background:transparent; border:0; font-size:22px; cursor:pointer }
+
+    /* App layout */
+    header.topbar{
+      position: sticky; top:0; z-index: 5; background: rgba(255,255,255,.7);
+      backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid #e5e7eb;
+    }
+    .topbar-inner{ max-width: 1200px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; gap:16px; }
+    .brand{display:flex; align-items:center; gap:12px; font-weight:800; color:var(--brand)}
+    .brand .logo{width:36px; height:36px; border-radius:10px; background: conic-gradient(from 220deg, var(--brand), var(--brand-2)); box-shadow:0 8px 18px var(--ring)}
+    .top-actions{margin-inline-start:auto; display:flex; gap:8px}
+    .btn{
+      appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:600; cursor:pointer;
+      background:var(--brand); color:white; box-shadow: 0 6px 16px var(--ring);
+      transition: transform .06s, box-shadow .2s, background .2s;
+    }
+    .btn:hover{transform: translateY(-1px)}
+    .btn:active{transform: translateY(0)}
+    .btn.secondary{background:#111827; color:#fff}
+    .btn.ghost{background:transparent; color:var(--brand); box-shadow:none}
+    .btn.success{background:var(--accent)}
+    .btn.danger{background:var(--danger)}
+    .btn.light{background:#eef2ff; color:#4338ca}
+    .btn.small{padding:6px 10px; border-radius:10px; font-size:13px}
+
+    .shell{display:grid; grid-template-columns: 320px 1fr; min-height:100vh}
+    @media (max-width: 960px){ .shell{grid-template-columns: 1fr} }
+
+    .sidebar{
+      padding:20px; border-inline-end:1px solid #e5e7eb;
+      background:linear-gradient(180deg, rgba(124,58,237,.06), transparent 180px);
+    }
+    .card{ background:var(--card); border:1px solid #eef0f6; border-radius: var(--radius); box-shadow: var(--shadow); }
+    .panel{padding:18px}
+    .panel h3{margin:0 0 8px; font-size:18px}
+    .muted{color:var(--muted)}
+    .hr{height:1px; background:#eef0f6; margin:12px 0}
+    .form{display:grid; gap:12px}
+    .row{display:grid; gap:6px}
+    label{font-size:13px; color:#374151; font-weight:600}
+    input, textarea{
+      background:#fff; border:1.5px solid #e5e7eb; border-radius:12px; padding:12px 14px; font:inherit;
+      outline:none; transition: border .15s, box-shadow .15s;
+    }
+    textarea{min-height:84px; resize:vertical}
+    input:focus, textarea:focus{border-color:var(--brand); box-shadow: 0 0 0 4px var(--ring)}
+    .helper{font-size:12px; color:var(--muted)}
+    .campaigns{margin-top:16px; display:flex; flex-direction:column; gap:10px; max-height:40vh; overflow:auto}
+    .camp-item{padding:12px; border-radius:14px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; display:flex; flex-direction:column; gap:6px; transition: background .15s, transform .06s}
+    .camp-item:hover{background:#fafafa; transform: translateY(-1px)}
+    .caption{font-size:12px; color:var(--muted)}
+
+    .main{padding:24px; max-width: 1000px; width:100%}
+    .hero{display:flex; flex-direction:column; gap:10px; margin-bottom:18px}
+    .info-banner{padding:14px; border-radius:14px; background:#f0fdfa; border:1px solid #ccfbf1; color:#065f46}
+
+    .copybar{display:flex; gap:8px; align-items:center; padding:12px; border:1px dashed #c7d2fe; background:#f5f3ff; border-radius:14px; margin-bottom:12px}
+    .urlbox{direction:ltr; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; overflow:auto}
+
+    .grid{display:grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap:10px}
+    .chip{user-select:none; text-align:center; padding:12px 6px; border-radius:14px; border:1.5px solid #e5e7eb; background:#fff; font-weight:800; letter-spacing:.3px; transition: transform .06s, border .15s, background .15s, color .15s; cursor:pointer}
+    .chip:hover{transform: translateY(-1px); border-color:var(--brand)}
+    .chip.taken{background:#eef2ff; border-color:#c7d2fe; color:#4338ca}
+    .chip.completed{background:#e5efe7; border-color:#a7f3d0; color:#065f46}
+
+    .progress{display:flex; align-items:center; gap:14px; margin:14px 0 8px}
+    .bar{flex:1; height:14px; background:#eef0f6; border-radius:999px; overflow:hidden}
+    .fill{height:100%; width:0; background:linear-gradient(90deg, var(--accent), #34d399); transition: width .45s ease}
+    .section{margin-top:18px}
+    .stack{display:grid; gap:12px}
+
+    /* Backend config panel */
+    .backend-config{
+      background:#fff5f5;
+      border:1px solid #fecaca;
+      border-radius:12px;
+      padding:12px;
+      margin-bottom:16px;
+    }
+    .config-input{
+      width:100%;
+      padding:8px;
+      border:1px solid #e5e7eb;
+      border-radius:8px;
+      font-size:13px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Backend status indicator -->
+  <div id="backendStatus" class="backend-status offline">אופליין</div>
+
+  <!-- Toasts -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="backdrop" onclick="closeConfirm()"></div>
+    <div class="dialog" style="width:min(520px,96vw)">
+      <header>
+        <h3 id="confirmTitle" style="margin:0">אישור</h3>
+        <button class="close-x" onclick="closeConfirm()" aria-label="סגור">×</button>
+      </header>
+      <div id="confirmMessage" class="content">האם לאשר?</div>
+      <div class="actions">
+        <button class="btn success" id="confirmYes">אישור</button>
+        <button class="btn ghost" onclick="closeConfirm()">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chapter Modal -->
+  <div id="chapterModal" class="modal" role="dialog" aria-modal="true">
+    <div class="backdrop" onclick="closeChapterModal()"></div>
+    <div class="dialog" style="width:min(720px, 92vw)">
+      <header>
+        <button class="close-x" onclick="closeChapterModal()" aria-label="סגור">×</button>
+        <h3 id="chapterTitle" style="margin:0"></h3>
+      </header>
+      <div id="chapterContent" class="content" style="white-space:pre-wrap; line-height:2; font-size:18px"></div>
+      <div class="actions">
+        <button class="btn success" id="finishChapterBtn" style="display:none">סיימתי</button>
+        <button class="btn ghost" onclick="closeChapterModal()">סגור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="logo"></div> פלטפורמת תהילים</div>
+      <div class="top-actions">
+        <button class="btn ghost" onclick="toggleBackendConfig()">הגדרות</button>
+        <button class="btn success" onclick="showCreateForm()">קמפיין חדש</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Shell -->
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Backend Configuration Panel -->
+      <div id="backendConfigPanel" class="backend-config" style="display:none">
+        <h4 style="margin:0 0 8px">הגדרות Backend</h4>
+        <div class="row">
+          <label>כתובת שרת Backend:</label>
+          <input id="backendUrl" class="config-input" placeholder="https://your-backend.vercel.app" />
+          <div class="helper">השאר ריק לעבודה אופליין בלבד</div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px">
+          <button class="btn small success" onclick="saveBackendConfig()">שמור</button>
+          <button class="btn small ghost" onclick="testBackend()">בדיקה</button>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <h3>יצירת קמפיין</h3>
+        <p class="muted">בחר שם, הזן פרטי מארגן, וקבל קישור לשיתוף.</p>
+        <div class="hr"></div>
+        <form id="campaignForm" class="form">
+          <div class="row">
+            <label for="organizerEmail">מייל המארגן</label>
+            <input id="organizerEmail" type="email" placeholder="name@email.com" required />
+            <div class="helper">ישלח לשם קישור לניהול הקמפיין</div>
+          </div>
+          <button class="btn" type="submit">צור קמפיין</button>
+        </form>
+      </div>
+
+      <div class="card panel" style="margin-top:14px">
+        <h3>קמפיינים אחרונים</h3>
+        <div id="campaignsList" class="campaigns">
+          <div class="muted">טוען קמפיינים...</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="hero">
+        <h2>קמפיין תהילים</h2>
+        <div class="info-banner">
+          <b>איך זה עובד?</b> יוצרים קמפיין, משתפים את הקישור, לוחצים על פרק: אם הוא פנוי — הוא נתפס מיד, הטקסט נפתח, ובסוף מסמנים "סיימתי". 
+          <b>חדש:</b> הקמפיינים נשמרים בענן ומסתנכרנים בין כל המשתתפים!
+        </div>
+      </div>
+
+      <!-- Campaign View -->
+      <section id="campaignSection" class="card panel" style="display:none">
+        <!-- Copy bar appears after create/load -->
+        <div id="copyBar" class="copybar" style="display:none">
+          <div class="urlbox" id="campaignUrl" style="flex:1"></div>
+          <button class="btn light" onclick="copyUrl()">העתק קישור</button>
+        </div>
+
+        <div id="campaignInfo" class="stack"></div>
+
+        <div class="card panel" style="background:#faf5ff; border-color:#e9d5ff; margin-top:10px">
+          <h3>לפני נטילת פרק</h3>
+          <div class="stack">
+            <div class="row">
+              <label for="participantName">שמך</label>
+              <input id="participantName" type="text" placeholder="שם מלא">
+            </div>
+            <div class="row">
+              <label for="participantEmail">דוא״ל</label>
+              <input id="participantEmail" type="email" placeholder="name@email.com">
+            </div>
+            <div class="helper">לאחר מילוי הפרטים, לחץ על אות פרק לבחירה</div>
+          </div>
+        </div>
+
+        <div class="progress">
+          <div id="progressText" class="muted"></div>
+          <div class="bar"><div id="progressFill" class="fill"></div></div>
+        </div>
+
+        <div class="section">
+          <h3>בחרו פרקי תהילים</h3>
+          <div id="chaptersGrid" class="grid" style="margin-top:10px"></div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:14px">
+          <button class="btn secondary" onclick="shareUrl()">שיתוף קמפיין</button>
+          <button class="btn light" onclick="refreshCampaign()">רענון</button>
+          <button class="btn ghost" onclick="showCreateForm()">קמפיין חדש</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /* ---------- Configuration ---------- */
+    const CONFIG = {
+      // Replace with your backend URL when deployed
+      BACKEND_URL: '', // Will be loaded from localStorage
+      OFFLINE_MODE: false
+    };
+
+    /* ---------- Toasts ---------- */
+    function showToast(msg, type='info', timeout=3500){
+      const wrap = document.getElementById('toasts');
+      const el = document.createElement('div');
+      el.className = 'toast ' + (type==='success'?'success': type==='error'?'error':'');
+      el.textContent = msg;
+      wrap.appendChild(el);
+      setTimeout(()=> { el.style.opacity = '0'; el.style.transform='translateY(-6px)'; setTimeout(()=> el.remove(), 200); }, timeout);
+    }
+
+    /* ---------- Internal Confirm ---------- */
+    let _confirmResolver = null;
+    function confirmDialog(message, title='אישור'){
+      const modal = document.getElementById('confirmModal');
+      document.getElementById('confirmMessage').textContent = message;
+      document.getElementById('confirmTitle').textContent = title;
+      modal.classList.add('on');
+      return new Promise(resolve => { _confirmResolver = resolve; });
+    }
+    function closeConfirm(){
+      document.getElementById('confirmModal').classList.remove('on');
+      if (_confirmResolver){ _confirmResolver(false); _confirmResolver = null; }
+    }
+    document.getElementById('confirmYes').addEventListener('click', ()=>{
+      document.getElementById('confirmModal').classList.remove('on');
+      if (_confirmResolver){ _confirmResolver(true); _confirmResolver = null; }
+    });
+
+    /* ---------- Backend Configuration ---------- */
+    function toggleBackendConfig(){
+      const panel = document.getElementById('backendConfigPanel');
+      panel.style.display = panel.style.display === 'none' ? '' : 'none';
+      if (panel.style.display !== 'none') {
+        document.getElementById('backendUrl').value = CONFIG.BACKEND_URL;
+      }
+    }
+
+    function saveBackendConfig(){
+      const url = document.getElementById('backendUrl').value.trim();
+      CONFIG.BACKEND_URL = url;
+      localStorage.setItem('tehillim_backend_url', url);
+      
+      if (url) {
+        testBackend();
+      } else {
+        updateBackendStatus(false, 'אופליין');
+        showToast('עובד במצב אופליין', 'info');
+      }
+      
+      document.getElementById('backendConfigPanel').style.display = 'none';
+    }
+
+    async function testBackend(){
+      if (!CONFIG.BACKEND_URL) {
+        updateBackendStatus(false, 'לא מוגדר');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/health`);
+        if (response.ok) {
+          const data = await response.json();
+          updateBackendStatus(true, 'מחובר');
+          showToast('החיבור לשרת תקין', 'success');
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        updateBackendStatus(false, 'שגיאה');
+        showToast('לא ניתן להתחבר לשרת', 'error');
+        console.error('Backend test failed:', error);
+      }
+    }
+
+    function updateBackendStatus(online, text) {
+      const status = document.getElementById('backendStatus');
+      status.className = `backend-status ${online ? 'online' : 'offline'}`;
+      status.textContent = text;
+      CONFIG.OFFLINE_MODE = !online;
+    }
+
+    /* ---------- Hebrew numerals ---------- */
+    const H_UNITS = {1:'א',2:'ב',3:'ג',4:'ד',5:'ה',6:'ו',7:'ז',8:'ח',9:'ט'};
+    const H_TENS = {10:'י',20:'כ',30:'ל',40:'מ',50:'נ',60:'ס',70:'ע',80:'פ',90:'צ'};
+    const H_HUND = {100:'ק',200:'ר',300:'ש',400:'ת'};
+    function toHebNum(n, punctuation=true){
+      let result = '';
+      let num = n;
+      [400,300,200,100].forEach(h=>{ while(num>=h){ result += H_HUND[h]; num -= h; } });
+      if (num === 15){ result += 'טו'; num = 0; }
+      else if (num === 16){ result += 'טז'; num = 0; }
+      else{ [90,80,70,60,50,40,30,20,10].forEach(t=>{ while(num>=t){ result += H_TENS[t]; num -= t; } }); }
+      if (num>0) result += H_UNITS[num] || '';
+      if (!punctuation) return result;
+      if (result.length >= 2){ return result.slice(0,-1) + '״' + result.slice(-1); }
+      if (result.length === 1){ return result + '׳'; }
+      return result;
+    }
+
+    /* ---------- API Client ---------- */
+    class APIClient {
+      constructor() {
+        this.baseUrl = CONFIG.BACKEND_URL;
+      }
+
+      async request(endpoint, options = {}) {
+        if (!this.baseUrl || CONFIG.OFFLINE_MODE) {
+          throw new Error('Backend not available - working offline');
+        }
+
+        const url = `${this.baseUrl}${endpoint}`;
+        const defaultHeaders = {
+          'Content-Type': 'application/json',
+        };
+
+        try {
+          const response = await fetch(url, {
+            ...options,
+            headers: { ...defaultHeaders, ...options.headers },
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          console.error('API Request failed:', error);
+          throw error;
+        }
+      }
+
+      // Campaign methods
+      async getCampaigns() {
+        return this.request('/api/campaigns');
+      }
+
+      async getCampaign(id) {
+        return this.request(`/api/campaigns?id=${id}`);
+      }
+
+      async createCampaign(campaign) {
+        return this.request('/api/campaigns', {
+          method: 'POST',
+          body: JSON.stringify(campaign),
+        });
+      }
+
+      async updateCampaign(id, updates) {
+        return this.request(`/api/campaigns?id=${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(updates),
+        });
+      }
+
+      async deleteCampaign(id) {
+        return this.request(`/api/campaigns?id=${id}`, {
+          method: 'DELETE',
+        });
+      }
+
+      // Chapter methods
+      async takeChapter(campaignId, chapterNum, name, email) {
+        return this.request(`/api/chapters?campaign=${campaignId}&chapter=${chapterNum}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            action: 'take',
+            name,
+            email,
+          }),
+        });
+      }
+
+      async completeChapter(campaignId, chapterNum) {
+        return this.request(`/api/chapters?campaign=${campaignId}&chapter=${chapterNum}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            action: 'complete',
+          }),
+        });
+      }
+    }
+
+    /* ---------- Platform ---------- */
+    class TehillimPlatform {
+      constructor(){
+        this.currentCampaignId = null;
+        this.currentChapterNum = null;
+        this.emailConfig = null;
+        this.tehillimTexts = this.getTehillimTexts();
+        this.api = new APIClient();
+        this.syncInterval = null;
+        this.init();
+      }
+
+      init(){
+        // Load backend URL from storage
+        const savedUrl = localStorage.getItem('tehillim_backend_url');
+        if (savedUrl) {
+          CONFIG.BACKEND_URL = savedUrl;
+          this.api.baseUrl = savedUrl;
+        }
+
+        this.loadEmailConfig();
+        if (typeof emailjs !== 'undefined') this.initEmailJS();
+        this.setupEventListeners();
+        this.loadFromUrl();
+        this.displayExistingCampaigns();
+        
+        // Test backend connection
+        if (CONFIG.BACKEND_URL) {
+          testBackend();
+        } else {
+          updateBackendStatus(false, 'לא מוגדר');
+        }
+
+        // Start sync interval if we have a campaign open
+        this.startSyncInterval();
+      }
+
+      setupEventListeners(){
+        document.getElementById('campaignForm').addEventListener('submit', async (e)=>{
+          e.preventDefault();
+          await this.createCampaign();
+        });
+        window.addEventListener('keydown', (e)=>{ if (e.key==='Escape') this.closeChapterModal(); });
+      }
+
+      startSyncInterval() {
+        // Sync every 10 seconds if campaign is open and backend available
+        this.syncInterval = setInterval(() => {
+          if (this.currentCampaignId && !CONFIG.OFFLINE_MODE) {
+            this.refreshCampaignData();
+          }
+        }, 10000);
+      }
+
+      async refreshCampaignData() {
+        if (!this.currentCampaignId) return;
+        
+        try {
+          const campaign = await this.api.getCampaign(this.currentCampaignId);
+          this.displayCampaign(campaign, {showCopyBar: true});
+        } catch (error) {
+          // Silently fail - don't spam user with errors
+          console.log('Sync failed:', error.message);
+        }
+      }
+
+      loadEmailConfig(){
+        const def = {
+          userId: 'd_LsqV-KBZuAeuCjf',
+          serviceId: 'service_p76h23d',
+          campaignCreatedTemplateId: 'template_0hmmrlk',
+          chapterTakenTemplateId: 'template_swui2zf',
+          chapterCompletedTemplateId: 'template_j01dkdf'
+        };
+        const saved = localStorage.getItem('tehillimEmailConfig');
+        this.emailConfig = saved ? {...def, ...JSON.parse(saved)} : def;
+        if (!saved) localStorage.setItem('tehillimEmailConfig', JSON.stringify(def));
+      }
+
+      initEmailJS(){
+        try{ emailjs.init(this.emailConfig.userId); }
+        catch(_){ try{ emailjs.init({ publicKey: this.emailConfig.userId }); } catch(e){ console.error(e); } }
+      }
+
+      /* -------- Routing -------- */
+      loadFromUrl(){
+        const urlParams = new URLSearchParams(location.search);
+        const campaignId = urlParams.get('campaign');
+        if (campaignId){
+          this.loadCampaign(campaignId, {showCopyBar:true});
+        }
+      }
+
+      /* -------- Data Management -------- */
+      // Local storage methods (fallback)
+      getCampaignsLocal(){
+        const data = localStorage.getItem('tehillimCampaigns');
+        return data ? JSON.parse(data) : {};
+      }
+
+      saveCampaignsLocal(campaigns){
+        localStorage.setItem('tehillimCampaigns', JSON.stringify(campaigns));
+      }
+
+      /* -------- Campaigns -------- */
+      async createCampaign(){
+        const name = document.getElementById('campaignName').value.trim();
+        const description = document.getElementById('campaignDescription').value.trim();
+        const organizer = document.getElementById('organizerName').value.trim();
+        const organizerEmail = document.getElementById('organizerEmail').value.trim();
+        
+        if (!name || !organizer || !organizerEmail){ 
+          showToast('נא למלא את כל השדות', 'error'); 
+          return; 
+        }
+
+        const id = this.generateId();
+        const campaign = {
+          id, name, description, organizer, organizerEmail,
+          created: new Date().toISOString(),
+          chapters: this.initializeChapters()
+        };
+
+        try {
+          // Try to save to backend first
+          if (!CONFIG.OFFLINE_MODE) {
+            await this.api.createCampaign(campaign);
+            showToast('קמפיין נוצר ונשמר בענן', 'success');
+          } else {
+            // Fallback to local storage
+            const campaigns = this.getCampaignsLocal();
+            campaigns[id] = campaign;
+            this.saveCampaignsLocal(campaigns);
+            showToast('קמפיין נוצר (אופליין)', 'success');
+          }
+
+          // Send email (non-blocking)
+          this.sendCampaignCreatedEmail(campaign);
+
+          // Navigate to campaign
+          this.navigateToCampaign(id, {showCopyBar:true});
+          document.getElementById('campaignForm').reset();
+          this.displayExistingCampaigns();
+
+        } catch (error) {
+          // Fallback to local storage if backend fails
+          const campaigns = this.getCampaignsLocal();
+          campaigns[id] = campaign;
+          this.saveCampaignsLocal(campaigns);
+          
+          this.navigateToCampaign(id, {showCopyBar:true});
+          document.getElementById('campaignForm').reset();
+          this.displayExistingCampaigns();
+          
+          showToast('קמפיין נוצר (אופליין - שרת לא זמין)', 'error');
+        }
+      }
+
+      navigateToCampaign(id, {showCopyBar=false}={}){
+        const base = location.origin + location.pathname;
+        const url = `${base}?campaign=${id}`;
+        history.pushState({}, document.title, url);
+        const urlBox = document.getElementById('campaignUrl');
+        urlBox.textContent = url;
+        document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
+        this.loadCampaign(id, {showCopyBar});
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+
+      async loadCampaign(id, {showCopyBar=false}={}){
+        this.currentCampaignId = id;
+        
+        try {
+          let campaign = null;
+          
+          // Try backend first
+          if (!CONFIG.OFFLINE_MODE) {
+            try {
+              campaign = await this.api.getCampaign(id);
+            } catch (error) {
+              console.log('Backend failed, trying local storage');
+            }
+          }
+          
+          // Fallback to local storage
+          if (!campaign) {
+            const campaigns = this.getCampaignsLocal();
+            campaign = campaigns[id];
+          }
+
+          if (!campaign) {
+            // Campaign not found anywhere
+            document.getElementById('campaignSection').style.display='';
+            document.getElementById('campaignInfo').innerHTML = `
+              <div class="muted">
+                קמפיין לא נמצא. זה יכול לקרות כי:
+                <ul style="margin-right: 20px; margin-top: 8px;">
+                  <li>הקמפיין נוצר במכשיר אחר</li>
+                  <li>השרת לא זמין כרגע</li>
+                  <li>הקישור שגוי</li>
+                </ul>
+                נסה להגדיר את השרת בהגדרות או ליצור קמפיין חדש.
+              </div>
+            `;
+            document.getElementById('chaptersGrid').innerHTML = '';
+            document.getElementById('progressText').textContent = '';
+            document.getElementById('progressFill').style.width = '0%';
+            
+            // Still show URL for sharing
+            const base = location.origin + location.pathname;
+            const url = `${base}?campaign=${id}`;
+            document.getElementById('campaignUrl').textContent = url;
+            document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
+            return;
+          }
+
+          this.displayCampaign(campaign, {showCopyBar});
+          
+        } catch (error) {
+          showToast('שגיאה בטעינת הקמפיין', 'error');
+          console.error('Load campaign error:', error);
+        }
+      }
+
+      displayCampaign(campaign, {showCopyBar=false}={}){
+        const section = document.getElementById('campaignSection');
+        section.style.display = '';
+
+        const base = location.origin + location.pathname;
+        const url = `${base}?campaign=${campaign.id}`;
+        document.getElementById('campaignUrl').textContent = url;
+        document.getElementById('copyBar').style.display = showCopyBar ? '' : 'none';
+
+        const info = document.getElementById('campaignInfo');
+        const backendIndicator = CONFIG.OFFLINE_MODE ? '<span style="color:#dc2626">(אופליין)</span>' : '<span style="color:#15803d">(מסונכרן)</span>';
+        info.innerHTML = `
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <h3 style="margin:0">${campaign.name}</h3>
+            <span style="display:inline-flex;padding:6px 10px;border-radius:999px;background:#f5f3ff;color:#4c1d95;border:1px solid #ddd6fe">
+              נוצר: ${new Date(campaign.created).toLocaleDateString('he-IL')}
+            </span>
+            ${backendIndicator}
+          </div>
+          ${campaign.description ? `<div class="muted">${campaign.description}</div>` : ''}
+          <div class="muted">מארגן: <b>${campaign.organizer}</b> • <span>${campaign.organizerEmail}</span></div>
+        `;
+
+        this.displayChapters(campaign.chapters);
+        this.updateProgress(campaign.chapters);
+      }
+
+      displayChapters(chapters){
+        const grid = document.getElementById('chaptersGrid');
+        grid.innerHTML = '';
+        for (let i=1;i<=150;i++){
+          const ch = chapters[i];
+          const div = document.createElement('div');
+          div.className = `chip ${ch.status}`;
+          div.textContent = toHebNum(i, false);
+          if (ch.status==='taken') div.title = `נלקח על ידי: ${ch.takenBy || 'אלמוני'}`;
+          if (ch.status==='completed') div.title = `הושלם על ידי: ${ch.takenBy || 'אלמוני'}`;
+          div.onclick = ()=> this.handleChapterClick(i);
+          grid.appendChild(div);
+        }
+      }
+
+      updateProgress(chapters){
+        const total = 150;
+        const taken = Object.values(chapters).filter(ch => ch.status!=='available').length;
+        const available = total - taken;
+        const pct = Math.round((taken/total)*100);
+        document.getElementById('progressText').textContent = `נלקחו: ${toHebNum(taken, false)} | זמינים: ${toHebNum(available, false)} | סה״כ: ${toHebNum(total, false)} (${pct}%)`;
+        document.getElementById('progressFill').style.width = `${pct}%`;
+      }
+
+      async handleChapterClick(chapterNum) {
+        if (!this.currentCampaignId) {
+          showToast('אין קמפיין פתוח', 'error');
+          return;
+        }
+
+        // Get current campaign data
+        let campaign = null;
+        try {
+          if (!CONFIG.OFFLINE_MODE) {
+            campaign = await this.api.getCampaign(this.currentCampaignId);
+          } else {
+            const campaigns = this.getCampaignsLocal();
+            campaign = campaigns[this.currentCampaignId];
+          }
+        } catch (error) {
+          const campaigns = this.getCampaignsLocal();
+          campaign = campaigns[this.currentCampaignId];
+        }
+
+        if (!campaign) {
+          showToast('שגיאה בטעינת הקמפיין', 'error');
+          return;
+        }
+
+        const chapter = campaign.chapters[chapterNum];
+        
+        // Available → take immediately
+        if (chapter.status === 'available') {
+          const name = document.getElementById('participantName').value.trim();
+          const email = document.getElementById('participantEmail').value.trim();
+          
+          if (!name || !email) {
+            showToast('נא להזין שם ודוא״ל לפני בחירת פרק', 'error');
+            return;
+          }
+          
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(email)) {
+            showToast('דוא״ל לא תקין', 'error');
+            return;
+          }
+
+          try {
+            // Try backend first
+            if (!CONFIG.OFFLINE_MODE) {
+              await this.api.takeChapter(this.currentCampaignId, chapterNum, name, email);
+              showToast(`פרק ${toHebNum(chapterNum, false)} נלקח בהצלחה`, 'success');
+            } else {
+              // Update local storage
+              chapter.status = 'taken';
+              chapter.takenBy = name;
+              chapter.takenByEmail = email;
+              chapter.takenAt = new Date().toISOString();
+              
+              const campaigns = this.getCampaignsLocal();
+              campaigns[this.currentCampaignId] = campaign;
+              this.saveCampaignsLocal(campaigns);
+              
+              showToast(`פרק ${toHebNum(chapterNum, false)} נלקח (אופליין)`, 'success');
+            }
+
+            // Refresh display
+            this.displayCampaigns(campaign.chapters);
+            this.updateProgress(campaign.chapters);
+
+            // Preload Sefaria text
+            fetchChapterFromSefaria(chapterNum).catch(() => {});
+
+            // Open modal
+            this.openChapterActionModal(chapterNum, { mode: 'taken' });
+
+            // Send emails
+            this.sendChapterTakenEmail(campaign, chapterNum, name, email);
+
+          } catch (error) {
+            // Fallback to offline mode
+            chapter.status = 'taken';
+            chapter.takenBy = name;
+            chapter.takenByEmail = email;
+            chapter.takenAt = new Date().toISOString();
+            
+            const campaigns = this.getCampaignsLocal();
+            campaigns[this.currentCampaignId] = campaign;
+            this.saveCampaignsLocal(campaigns);
+            
+            this.displayCampaign(campaign, { showCopyBar: true });
+            this.openChapterActionModal(chapterNum, { mode: 'taken' });
+            
+            showToast(`פרק ${toHebNum(chapterNum, false)} נלקח (אופליין)`, 'error');
+          }
+          return;
+        }
+
+        // Taken → open with finish button
+        if (chapter.status === 'taken') {
+          this.openChapterActionModal(chapterNum, { mode: 'taken' });
+          return;
+        }
+
+        // Completed → open read-only
+        this.openChapterActionModal(chapterNum, { mode: 'completed' });
+      }
+
+      async openChapterActionModal(chapterNum, {mode}={}){
+        this.currentChapterNum = chapterNum;
+        document.getElementById('chapterTitle').textContent = `תהילים — פרק ${toHebNum(chapterNum,false)}`;
+        document.getElementById('chapterContent').textContent = this.tehillimTexts[chapterNum] || 'טוען טקסט...';
+        document.getElementById('chapterModal').classList.add('on');
+
+        try{
+          const t = await fetchChapterFromSefaria(chapterNum);
+          document.getElementById('chapterContent').textContent = t;
+        }catch(e){
+          showToast('שגיאה בטעינת הטקסט מסֶפַרְיָה', 'error');
+          console.error(e);
+        }
+
+        const finishBtn = document.getElementById('finishChapterBtn');
+        if (mode==='taken'){
+          finishBtn.style.display='';
+          finishBtn.onclick = ()=> this.completeChapter(chapterNum);
+        } else {
+          finishBtn.style.display='none';
+          finishBtn.onclick = null;
+        }
+      }
+
+      async completeChapter(chapterNum) {
+        if (!this.currentCampaignId) {
+          showToast('אין קמפיין פתוח', 'error');
+          return;
+        }
+
+        try {
+          // Try backend first
+          if (!CONFIG.OFFLINE_MODE) {
+            await this.api.completeChapter(this.currentCampaignId, chapterNum);
+            showToast('הפרק סומן כמושלם', 'success');
+          } else {
+            // Update local storage
+            const campaigns = this.getCampaignsLocal();
+            const campaign = campaigns[this.currentCampaignId];
+            const chapter = campaign.chapters[chapterNum];
+            
+            chapter.status = 'completed';
+            chapter.completedAt = new Date().toISOString();
+            
+            this.saveCampaignsLocal(campaigns);
+            showToast('הפרק סומן כמושלם (אופליין)', 'success');
+          }
+
+          // Refresh campaign display
+          const campaign = await this.getCurrentCampaign();
+          if (campaign) {
+            this.displayCampaign(campaign, { showCopyBar: true });
+            this.sendChapterCompletedEmail(campaign, chapterNum, campaign.chapters[chapterNum].takenBy || 'משתתף');
+          }
+
+          this.closeChapterModal();
+
+        } catch (error) {
+          showToast('שגיאה בעדכון הפרק', 'error');
+          console.error('Complete chapter error:', error);
+        }
+      }
+
+      async getCurrentCampaign() {
+        if (!this.currentCampaignId) return null;
+
+        try {
+          if (!CONFIG.OFFLINE_MODE) {
+            return await this.api.getCampaign(this.currentCampaignId);
+          }
+        } catch (error) {
+          console.log('Backend failed, using local storage');
+        }
+
+        const campaigns = this.getCampaignsLocal();
+        return campaigns[this.currentCampaignId];
+      }
+
+      closeChapterModal(){ document.getElementById('chapterModal').classList.remove('on'); }
+
+      /* -------- Email (same as original) -------- */
+      async sendCampaignCreatedEmail(campaign){
+        if (typeof emailjs==='undefined') return;
+        if (!this.emailConfig?.campaignCreatedTemplateId) return;
+        const url = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
+        const params = {
+          to_email: campaign.organizerEmail, to_name: campaign.organizer, from_name: 'פלטפורמת תהילים',
+          campaign_name: campaign.name, campaign_url: url,
+          message: `הקמפיין "${campaign.name}" נוצר בהצלחה! שתף את הקישור עם אחרים.`,
+          subject: `קמפיין תהילים נוצר — ${campaign.name}`
+        };
+        try{
+          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.campaignCreatedTemplateId, params);
+          showToast('המייל עם הקישור נשלח', 'success');
+        }catch(e){
+          showToast('שליחת המייל נכשלה', 'error');
+          console.warn(e);
+        }
+      }
+
+      async sendChapterTakenEmail(campaign, chapterNum, userName, userEmail){
+        if (typeof emailjs==='undefined' || !this.emailConfig) return;
+
+        // Ensure we have the cleaned text
+        try { await fetchChapterFromSefaria(chapterNum); } catch(_) {}
+        let chapterText = (this.tehillimTexts?.[chapterNum] || '').trim();
+        if (!chapterText) {
+          chapterText = `תהילים — פרק ${toHebNum(chapterNum,false)}\n(לצפייה בטקסט המלא היכנסו לקישור הקמפיין)`;
+        }
+
+        // Organizer notice
+        if (this.emailConfig.chapterCompletedTemplateId){
+          const orgParams = {
+            to_email: campaign.organizerEmail, to_name: campaign.organizer, from_name: 'פלטפורמת תהילים',
+            campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
+            participant_name: userName, participant_email: userEmail,
+            message: `${userName} לקח על עצמו לקרוא פרק ${toHebNum(chapterNum,false)} בקמפיין "${campaign.name}"`,
+            subject: `פרק נלקח — ${campaign.name}`
+          };
+          try{ await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, orgParams); }catch(_){}
+        }
+
+        // Send text to participant
+        if (userEmail && this.emailConfig.chapterTakenTemplateId){
+          const campaignUrl = `${location.origin}${location.pathname}?campaign=${campaign.id}`;
+          const userParams = {
+            to_email: userEmail, to_name: userName, from_name: 'פלטפורמת תהילים',
+            campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
+            chapter_text: chapterText,
+            campaign_url: campaignUrl,
+            message: `קיבלת את פרק ${toHebNum(chapterNum,false)} מתהילים עבור "${campaign.name}". לאחר הקריאה, חזור לאתר וסמן השלמה.`,
+            subject: `פרק ${toHebNum(chapterNum,false)} — ${campaign.name}`
+          };
+          try{
+            await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterTakenTemplateId, userParams);
+            showToast('טקסט הפרק נשלח בדוא״ל', 'success');
+          }catch(e){
+            showToast('שליחת טקסט הפרק נכשלה', 'error');
+          }
+        }
+      }
+
+      async sendChapterCompletedEmail(campaign, chapterNum, userName){
+        if (typeof emailjs==='undefined' || !this.emailConfig?.chapterCompletedTemplateId) return;
+        const params = {
+          to_name: campaign.organizer, to_email: campaign.organizerEmail,
+          campaign_name: campaign.name, chapter_number: toHebNum(chapterNum, false),
+          user_name: userName,
+          message: `${userName} סיים לקרוא פרק ${toHebNum(chapterNum,false)} בקמפיין "${campaign.name}"!`,
+          subject: `פרק הושלם — ${campaign.name}`
+        };
+        try{
+          await emailjs.send(this.emailConfig.serviceId, this.emailConfig.chapterCompletedTemplateId, params);
+          showToast('המארגן קיבל עדכון על הסיום', 'success');
+        }catch(e){
+          showToast('שליחת עדכון הסיום נכשלה', 'error');
+        }
+      }
+
+      /* -------- Utils -------- */
+      generateId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2); }
+      
+      initializeChapters(){
+        const obj = {};
+        for (let i=1;i<=150;i++){
+          obj[i] = { status:'available', takenBy:null, takenByEmail:null, completedAt:null };
+        }
+        return obj;
+      }
+      
+      showCreateForm(){
+        document.getElementById('campaignSection').style.display='none';
+        history.pushState({}, document.title, location.pathname);
+        window.scrollTo({top:0, behavior:'smooth'});
+      }
+      
+      getTehillimTexts(){
+        const t = {};
+        for (let i=1;i<=150;i++) t[i] = `מזמור ${toHebNum(i,false)}\n(יטען מסֶפַרְיָה בעת הצורך)`;
+        return t;
+      }
+
+      async displayExistingCampaigns(){
+        const box = document.getElementById('campaignsList');
+        box.innerHTML = '<div class="muted">טוען קמפיינים...</div>';
+
+        try {
+          let campaigns = [];
+
+          // Try backend first
+          if (!CONFIG.OFFLINE_MODE) {
+            try {
+              campaigns = await this.api.getCampaigns();
+            } catch (error) {
+              console.log('Backend failed, using local storage');
+            }
+          }
+
+          // If no backend campaigns, use local storage
+          if (campaigns.length === 0) {
+            const localCampaigns = this.getCampaignsLocal();
+            const now = Date.now();
+            const DAY = 24*60*60*1000;
+            
+            campaigns = Object.values(localCampaigns).filter(c => {
+              const createdMs = new Date(c.created).getTime();
+              return (now - createdMs) <= DAY;
+            }).sort((a,b) => new Date(b.created) - new Date(a.created));
+          }
+
+          if (campaigns.length === 0) {
+            box.innerHTML = '<div class="muted">אין קמפיינים אחרונים</div>';
+            return;
+          }
+
+          box.innerHTML = '';
+          campaigns.forEach(c => {
+            const completed = Object.values(c.chapters).filter(x=>x.status==='completed').length;
+            const pct = Math.round(completed/150*100);
+            const el = document.createElement('div');
+            el.className = 'camp-item';
+            el.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px">
+                <div style="font-weight:700">${c.name || 'ללא שם'}</div>
+                <div class="caption">${pct}% הושלם</div>
+              </div>
+              <div class="caption">מארגן: ${c.organizer || 'לא ידוע'} • ${completed}/150</div>
+            `;
+            el.onclick = ()=> this.navigateToCampaign(c.id, {showCopyBar:true});
+            box.appendChild(el);
+          });
+
+        } catch (error) {
+          box.innerHTML = '<div class="muted">שגיאה בטעינת קמפיינים</div>';
+          console.error('Display campaigns error:', error);
+        }
+      }
+    }
+
+    /* Global helpers */
+    function copyUrl(){
+      const url = document.getElementById('campaignUrl').textContent;
+      navigator.clipboard.writeText(url).then(()=> showToast('הקישור הועתק', 'success'));
+    }
+    
+    function shareUrl(){
+      const url = document.getElementById('campaignUrl').textContent;
+      if (navigator.share){ navigator.share({title:'קמפיין תהילים', text:'הצטרפו לקמפיין תהילים', url}); }
+      else { navigator.clipboard.writeText(url).then(()=> showToast('הקישור הועתק', 'success')); }
+    }
+    
+    function showCreateForm(){ window.tehillimPlatform.showCreateForm(); }
+    function closeChapterModal(){ window.tehillimPlatform.closeChapterModal(); }
+    
+    function refreshCampaign(){
+      if (window.tehillimPlatform.currentCampaignId) {
+        window.tehillimPlatform.refreshCampaignData();
+        showToast('מרענן...', 'info');
+      }
+    }
+
+    // Bootstrap
+    window.tehillimPlatform = new TehillimPlatform();
+  </script>
+
+  <!-- Sefaria loader -->
+  <script>
+    const _psalmsCache = new Map();
+
+    async function fetchChapterFromSefaria(chNum){
+      if (_psalmsCache.has(chNum)) return _psalmsCache.get(chNum);
+
+      const url = `https://www.sefaria.org/api/texts/Psalms.${chNum}?lang=he&commentary=0`;
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) throw new Error('Sefaria HTTP ' + res.status);
+      const data = await res.json();
+
+      const verses = Array.isArray(data.he) ? data.he : [];
+
+      // Clean every verse: strip tags and normalize spaces
+      const clean = verses.map((v, i) => {
+        let text = String(v || '')
+          .replace(/<[^>]+>/g, '')    // remove HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return `(${toHebNum(i+1,false)}) ${text}`;
+      });
+
+      const text = clean.join('\n');
+      _psalmsCache.set(chNum, text);
+
+      // Update platform store
+      if (window.tehillimPlatform){
+        window.tehillimPlatform.tehillimTexts[chNum] = text;
+      }
+      return text;
+    }
+  </script>
+</body>
+</html>="campaignName">שם הקמפיין</label>
+            <input id="campaignName" type="text" placeholder="לרפואת... / לע״נ... / לזכות..." required />
+          </div>
+          <div class="row">
+            <label for="campaignDescription">תיאור (אופציונלי)</label>
+            <textarea id="campaignDescription" placeholder="פרטים נוספים על הקמפיין..."></textarea>
+          </div>
+          <div class="row">
+            <label for="organizerName">שם המארגן</label>
+            <input id="organizerName" type="text" required />
+          </div>
+          <div class="row">
+            <label for      animation:slideIn .2s ease;
     }
     .toast.success{border-inline-start-color:var(--accent)}
     .toast.error{border-inline-start-color:var(--danger)}
