@@ -1,534 +1,596 @@
-import React, { useState, useEffect } from 'react';
-import { Book, Mail, Check, User, Clock, Heart, Plus, Copy, Bell } from 'lucide-react';
-
-const TehillimTracker = () => {
-  const [campaigns, setCampaigns] = useState({});
-  const [currentCampaign, setCurrentCampaign] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedChapters, setSelectedChapters] = useState([]);
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [showChapterText, setShowChapterText] = useState(null);
-  const [emailSent, setEmailSent] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-
-  // New campaign form state
-  const [campaignName, setCampaignName] = useState('');
-  const [prayerFor, setPrayerFor] = useState('');
-  const [creatorName, setCreatorName] = useState('');
-  const [creatorEmail, setCreatorEmail] = useState('');
-
-  // Check URL for campaign ID
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const campaignId = urlParams.get('campaign');
-    if (campaignId && campaigns[campaignId]) {
-      setCurrentCampaign(campaignId);
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>מערכת תהילים קהילתית</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #ebf4ff, #c3dafe);
+      margin: 0;
+      padding: 0;
+      direction: rtl;
     }
-  }, [campaigns]);
-
-  // Sample chapter text
-  const chapterTexts = {
-    1: `תהילים א
-א אַשְׁרֵי הָאִישׁ אֲשֶׁר לֹא הָלַךְ בַּעֲצַת רְשָׁעִים וּבְדֶרֶךְ חַטָּאִים לֹא עָמָד וּבְמוֹשַׁב לֵצִים לֹא יָשָׁב
-ב כִּי אִם בְּתוֹרַת יְהוָה חֶפְצוֹ וּבְתוֹרָתוֹ יֶהְגֶּה יוֹמָם וָלָיְלָה
-ג וְהָיָה כְּעֵץ שָׁתוּל עַל פַּלְגֵי מָיִם אֲשֶׁר פִּרְיוֹ יִתֵּן בְּעִתּוֹ וְעָלֵהוּ לֹא יִבּוֹל וְכֹל אֲשֶׁר יַעֲשֶׂה יַצְלִיחַ
-ד לֹא כֵן הָרְשָׁעִים כִּי אִם כַּמֹּץ אֲשֶׁר תִּדְּפֶנּוּ רוּחַ
-ה עַל כֵּן לֹא יָקֻמוּ רְשָׁעִים בַּמִּשְׁפָּט וְחַטָּאִים בַּעֲדַת צַדִּיקִים
-ו כִּי יוֹדֵעַ יְהוָה דֶּרֶךְ צַדִּיקִים וְדֶרֶךְ רְשָׁעִים תֹּאבֵד`,
-    23: `תהילים כג
-א מִזְמוֹר לְדָוִד יְהוָה רֹעִי לֹא אֶחְסָר
-ב בִּנְאוֹת דֶּשֶׁא יַרְבִּיצֵנִי עַל מֵי מְנֻחוֹת יְנַהֲלֵנִי
-ג נַפְשִׁי יְשׁוֹבֵב יַנְחֵנִי בְמַעְגְּלֵי צֶדֶק לְמַעַן שְׁמוֹ
-ד גַּם כִּי אֵלֵךְ בְּגֵיא צַלְמָוֶת לֹא אִירָא רָע כִּי אַתָּה עִמָּדִי שִׁבְטְךָ וּמִשְׁעַנְתֶּךָ הֵמָּה יְנַחֲמֻנִי
-ה תַּעֲרֹךְ לְפָנַי שֻׁלְחָן נֶגֶד צֹרְרָי דִּשַּׁנְתָּ בַשֶּׁמֶן רֹאשִׁי כּוֹסִי רְוָיָה
-ו אַךְ טוֹב וָחֶסֶד יִרְדְּפוּנִי כָּל יְמֵי חַיָּי וְשַׁבְתִּי בְּבֵית יְהוָה לְאֹרֶךְ יָמִים`
-  };
-
-  const generateCampaignId = () => {
-    return Math.random().toString(36).substr(2, 9);
-  };
-
-  const createNewCampaign = () => {
-    if (!campaignName || !prayerFor || !creatorName || !creatorEmail) {
-      alert('נא למלא את כל השדות');
-      return;
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      min-height: 100vh;
     }
+    h1, h2 {
+      color: #4c51bf;
+    }
+    .btn {
+      background: #5a67d8;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 10px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      margin: 5px 0;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #434190;
+    }
+    .input, input, select {
+      width: 100%;
+      padding: 9px;
+      margin: 4px 0 10px 0;
+      border-radius: 6px;
+      border: 1px solid #cbd5e0;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+      justify-content: center;
+    }
+    .stat {
+      background: #e6fffa;
+      color: #2c5282;
+      border-radius: 9px;
+      padding: 12px 20px;
+      text-align: center;
+      flex: 1;
+    }
+    .stat.yellow { background: #fffbea; color: #b7791f; }
+    .stat.green { background: #f0fff4; color: #276749; }
+    .stat.blue { background: #ebf8ff; color: #2b6cb0; }
+    .campaign-list {
+      margin: 0 0 32px 0;
+    }
+    .campaign-card {
+      border: 1px solid #cbd5e0;
+      border-radius: 9px;
+      padding: 10px 15px;
+      background: #f7fafc;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .chapter-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      margin-bottom: 20px;
+      margin-top: 10px;
+    }
+    .chapter-btn {
+      padding: 7px 0;
+      font-size: 0.97em;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .chapter-btn.available { background: #f0fff4; color: #276749; }
+    .chapter-btn.available:hover { background: #c6f6d5; }
+    .chapter-btn.selected { background: #5a67d8; color: #fff; }
+    .chapter-btn.taken { background: #fefcbf; color: #b7791f; cursor: not-allowed; }
+    .chapter-btn.completed { background: #4299e1; color: #fff; cursor: not-allowed; }
+    .chapter-btn .icon { margin-right: 3px; vertical-align: middle; }
+    .taken-list { margin-bottom: 24px; }
+    .taken-card {
+      background: #fefcbf;
+      border-radius: 7px;
+      padding: 9px 14px;
+      margin-bottom: 7px;
+      border: 1px solid #faf089;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .taken-card.completed {
+      background: #ebf8ff;
+      border: 1px solid #bee3f8;
+      color: #2b6cb0;
+    }
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.48);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      max-width: 450px;
+      width: 100%;
+      box-shadow: 0 2px 18px rgba(0,0,0,0.12);
+      position: relative;
+    }
+    .modal .close {
+      position: absolute;
+      left: 16px;
+      top: 12px;
+      font-size: 2em;
+      color: #718096;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .footer {
+      text-align: center;
+      color: #718096;
+      margin-top: 40px;
+      font-size: 0.95em;
+    }
+    pre {
+      white-space: pre-wrap;
+      font-size: 1em;
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 10px;
+      direction: rtl;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="app"></div>
 
-    const campaignId = generateCampaignId();
-    const newCampaign = {
-      id: campaignId,
-      name: campaignName,
-      prayerFor: prayerFor,
-      creatorName: creatorName,
-      creatorEmail: creatorEmail,
-      createdAt: new Date().toLocaleString('he-IL'),
-      chapters: {}
+  <script>
+    // SVG icons for simplicity
+    const icons = {
+      book: '<svg class="icon" width="22" height="22" fill="none" stroke="#4c51bf" stroke-width="2" viewBox="0 0 24 24"><path d="M2 7V19a2 2 0 002 2h16m0-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2z"/><path d="M6 2v4"/></svg>',
+      plus: '<svg class="icon" width="18" height="18" fill="none" stroke="#4c51bf" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+      copy: '<svg class="icon" width="18" height="18" fill="none" stroke="#38a169" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><rect x="2" y="2" width="13" height="13" rx="2"/></svg>',
+      bell: '<svg class="icon" width="16" height="16" fill="none" stroke="#4c51bf" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>',
+      check: '<svg class="icon" width="14" height="14" fill="none" stroke="#3182ce" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
+      clock: '<svg class="icon" width="14" height="14" fill="none" stroke="#b7791f" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+      user: '<svg class="icon" width="16" height="16" fill="none" stroke="#4a5568" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a7 7 0 0113 0"/></svg>',
+      heart: '<svg class="icon" width="16" height="16" fill="none" stroke="#e53e3e" stroke-width="2" viewBox="0 0 24 24"><path d="M12 21C12 21 5 14.5 5 9.5A4.5 4.5 0 0112 5a4.5 4.5 0 017 4.5C19 14.5 12 21 12 21z"/></svg>',
     };
 
-    // Initialize all 150 chapters
-    for (let i = 1; i <= 150; i++) {
-      newCampaign.chapters[i] = {
-        id: i,
-        available: true,
-        takenBy: '',
-        email: '',
-        completed: false,
-        takenAt: null
-      };
+    // --- Sefaria fetch ---
+    let sefariaText = null;
+    fetch('https://www.sefaria.org/api/v3/texts/tref', { method: 'GET', headers: { accept: 'application/json' } })
+      .then(res => res.json())
+      .then(res => {
+        sefariaText = res;
+        render();
+      })
+      .catch(err => {
+        sefariaText = { error: err.message };
+        render();
+      });
+
+    // --- App State ---
+    let campaigns = {};
+    let currentCampaign = null;
+    let showCreateForm = false;
+    let selectedChapters = [];
+    let userName = '';
+    let userEmail = '';
+    let showChapterText = null;
+    // Campaign form
+    let campaignName = '';
+    let prayerFor = '';
+    let creatorName = '';
+    let creatorEmail = '';
+
+    // --- Helper Functions ---
+    function generateId() {
+      return Math.random().toString(36).substr(2, 9);
+    }
+    function resetForm() {
+      campaignName = '';
+      prayerFor = '';
+      creatorName = '';
+      creatorEmail = '';
+    }
+    function alertMsg(msg) {
+      window.alert(msg);
     }
 
-    setCampaigns(prev => ({
-      ...prev,
-      [campaignId]: newCampaign
-    }));
+    // --- Render Function ---
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = '';
 
-    setCurrentCampaign(campaignId);
-    setShowCreateForm(false);
-    
-    // Reset form
-    setCampaignName('');
-    setPrayerFor('');
-    setCreatorName('');
-    setCreatorEmail('');
+      // If modal open
+      if (showChapterText !== null) {
+        renderModal(app);
+        return;
+      }
 
-    // Update URL
-    window.history.pushState({}, '', `?campaign=${campaignId}`);
-  };
-
-  const getCurrentCampaignData = () => {
-    return currentCampaign ? campaigns[currentCampaign] : null;
-  };
-
-  const handleChapterSelect = (chapterNum) => {
-    const campaignData = getCurrentCampaignData();
-    if (!campaignData || !campaignData.chapters[chapterNum].available) return;
-    
-    if (selectedChapters.includes(chapterNum)) {
-      setSelectedChapters(selectedChapters.filter(ch => ch !== chapterNum));
-    } else {
-      setSelectedChapters([...selectedChapters, chapterNum]);
-    }
-  };
-
-  const handleClaimChapters = () => {
-    if (!userName || !userEmail || selectedChapters.length === 0) {
-      alert('נא למלא שם, אימייל ולבחור לפחות פרק אחד');
-      return;
-    }
-
-    const campaignData = getCurrentCampaignData();
-    if (!campaignData) return;
-
-    const updatedCampaigns = { ...campaigns };
-    selectedChapters.forEach(chapterNum => {
-      updatedCampaigns[currentCampaign].chapters[chapterNum] = {
-        ...updatedCampaigns[currentCampaign].chapters[chapterNum],
-        available: false,
-        takenBy: userName,
-        email: userEmail,
-        takenAt: new Date().toLocaleString('he-IL')
-      };
-    });
-
-    setCampaigns(updatedCampaigns);
-    
-    // Simulate sending email to participant
-    setTimeout(() => {
-      setEmailSent(true);
-      setTimeout(() => setEmailSent(false), 3000);
-    }, 1000);
-
-    // Simulate sending notification to campaign creator
-    setTimeout(() => {
-      console.log(`📧 Notification sent to ${campaignData.creatorEmail}: ${userName} took chapters ${selectedChapters.join(', ')} for ${campaignData.prayerFor}`);
-    }, 500);
-
-    setSelectedChapters([]);
-    setUserName('');
-    setUserEmail('');
-  };
-
-  const handleCompleteChapter = (chapterNum) => {
-    const updatedCampaigns = { ...campaigns };
-    updatedCampaigns[currentCampaign].chapters[chapterNum] = {
-      ...updatedCampaigns[currentCampaign].chapters[chapterNum],
-      completed: true
-    };
-    setCampaigns(updatedCampaigns);
-
-    // Notify campaign creator about completion
-    const campaignData = getCurrentCampaignData();
-    setTimeout(() => {
-      console.log(`📧 Completion notification sent to ${campaignData.creatorEmail}: Chapter ${chapterNum} completed for ${campaignData.prayerFor}`);
-    }, 500);
-  };
-
-  const copyLink = () => {
-    const link = `${window.location.origin}${window.location.pathname}?campaign=${currentCampaign}`;
-    navigator.clipboard.writeText(link);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  };
-
-  const campaignData = getCurrentCampaignData();
-
-  // Campaign selection/creation screen
-  if (!currentCampaign) {
-    return (
-      <div className="max-w-4xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-indigo-900 mb-2 flex items-center justify-center gap-2">
-            <Book className="text-indigo-600" />
-            מערכת תהילים קהילתית
-          </h1>
-          <p className="text-lg text-indigo-700">צור מסע תהילים חדש או הצטרף לקיים</p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Create New Campaign */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <Plus className="w-6 h-6" />
-              צור מסע תהילים חדש
-            </h2>
-            
-            {!showCreateForm ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">צור מסע תהילים מותאם אישית עם קישור ייחודי</p>
-                <button
-                  onClick={() => setShowCreateForm(true)}
-                  className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 mx-auto"
-                >
-                  <Plus className="w-5 h-5" />
-                  צור מסע חדש
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">שם המסע</label>
-                  <input
-                    type="text"
-                    value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                    placeholder="לדוגמה: תהילים לרפואת חולים"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">למי אנחנו מתפללים?</label>
-                  <input
-                    type="text"
-                    value={prayerFor}
-                    onChange={(e) => setPrayerFor(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                    placeholder="לדוגמה: יוסף בן מרים, שרה בת רחל"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">השם שלך</label>
-                  <input
-                    type="text"
-                    value={creatorName}
-                    onChange={(e) => setCreatorName(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                    placeholder="השם שלך"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">האימייל שלך</label>
-                  <input
-                    type="email"
-                    value={creatorEmail}
-                    onChange={(e) => setCreatorEmail(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-md"
-                    placeholder="תקבל התראות כשמישהו לוקח פרק"
-                  />
-                </div>
-                
-                <div className="flex gap-2 pt-4">
-                  <button
-                    onClick={createNewCampaign}
-                    className="flex-1 bg-indigo-600 text-white p-3 rounded-md hover:bg-indigo-700"
-                  >
-                    צור מסע
-                  </button>
-                  <button
-                    onClick={() => setShowCreateForm(false)}
-                    className="px-6 bg-gray-300 text-gray-700 p-3 rounded-md hover:bg-gray-400"
-                  >
-                    ביטול
-                  </button>
-                </div>
-              </div>
-            )}
+      // --- Main screen ---
+      if (!currentCampaign) {
+        const mainDiv = document.createElement('div');
+        // Header
+        mainDiv.innerHTML += `
+          <div style="text-align:center; margin-bottom:32px;">
+            <h1 style="font-size:2.2em; font-weight:bold;">${icons.book} מערכת תהילים קהילתית</h1>
+            <div style="color:#5a67d8; font-size:1.15em;">צור מסע תהילים חדש או הצטרף לקיים</div>
           </div>
+        `;
 
-          {/* Existing Campaigns */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-indigo-900 mb-4 flex items-center gap-2">
-              <Book className="w-6 h-6" />
-              מסעות תהילים פעילים
-            </h2>
-            
-            {Object.keys(campaigns).length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">אין מסעות פעילים כרגע</p>
-                <p className="text-sm text-gray-500">צור מסע חדש או הזן קישור למסע קיים</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {Object.values(campaigns).map(campaign => {
-                  const completedCount = Object.values(campaign.chapters).filter(ch => ch.completed).length;
-                  const takenCount = Object.values(campaign.chapters).filter(ch => !ch.available && !ch.completed).length;
-                  
-                  return (
-                    <div key={campaign.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-semibold text-lg">{campaign.name}</h3>
-                          <p className="text-indigo-600">עבור: {campaign.prayerFor}</p>
-                          <p className="text-sm text-gray-500">נוצר על ידי: {campaign.creatorName}</p>
-                        </div>
-                        <button
-                          onClick={() => setCurrentCampaign(campaign.id)}
-                          className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200"
-                        >
-                          הצטרף
-                        </button>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        הושלמו: {completedCount} | נלקחו: {takenCount} | זמינים: {150 - completedCount - takenCount}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        // Sefaria preview
+        mainDiv.innerHTML += `
+          <div style="background:#fff; border-radius:10px; box-shadow:0 1px 6px #e2e8f0; padding:18px; margin-bottom:25px;">
+            <h2 style="font-size:1.08em; font-weight:bold; margin-bottom:7px;">טקסט מספאריה</h2>
+            ${sefariaText
+              ? sefariaText.error
+                ? `<div style="color:#e53e3e;">שגיאת טעינה: ${sefariaText.error}</div>`
+                : `<pre>${JSON.stringify(sefariaText, null, 2)}</pre>`
+              : '<div>טוען טקסט מספאריה...</div>'}
           </div>
-        </div>
-      </div>
-    );
-  }
+        `;
 
-  // Main campaign screen
-  const availableCount = Object.values(campaignData.chapters).filter(ch => ch.available).length;
-  const takenCount = Object.values(campaignData.chapters).filter(ch => !ch.available && !ch.completed).length;
-  const completedCount = Object.values(campaignData.chapters).filter(ch => ch.completed).length;
+        // Grid: create/join
+        const gridDiv = document.createElement('div');
+        gridDiv.style.display = 'flex';
+        gridDiv.style.gap = '24px';
+        gridDiv.style.flexWrap = 'wrap';
 
-  return (
-    <div className="max-w-6xl mx-auto p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-      <div className="text-center mb-6">
-        <button
-          onClick={() => setCurrentCampaign(null)}
-          className="mb-4 text-indigo-600 hover:text-indigo-800 underline"
-        >
-          ← חזור למסעות
-        </button>
-        
-        <h1 className="text-3xl font-bold text-indigo-900 mb-2">
-          {campaignData.name}
-        </h1>
-        <p className="text-xl text-indigo-700 mb-1">
-          תהילים עבור: <span className="font-semibold">{campaignData.prayerFor}</span>
-        </p>
-        <p className="text-sm text-gray-600 mb-4">
-          נוצר על ידי {campaignData.creatorName} ב-{campaignData.createdAt}
-        </p>
-        
-        <div className="flex justify-center gap-2 mb-4">
-          <button
-            onClick={copyLink}
-            className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200"
-          >
-            {linkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {linkCopied ? 'הקישור הועתק!' : 'העתק קישור'}
-          </button>
-        </div>
-      </div>
-
-      {emailSent && (
-        <div className="mb-6 p-4 bg-green-100 border border-green-400 rounded-lg text-center">
-          <div className="flex items-center justify-center gap-2 text-green-800">
-            <Mail className="w-5 h-5" />
-            <span>האימייל נשלח בהצלחה עם הפרקים שבחרת!</span>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-green-100 p-4 rounded-lg text-center">
-          <div className="text-2xl font-bold text-green-800">{availableCount}</div>
-          <div className="text-green-700">פרקים זמינים</div>
-        </div>
-        <div className="bg-yellow-100 p-4 rounded-lg text-center">
-          <div className="text-2xl font-bold text-yellow-800">{takenCount}</div>
-          <div className="text-yellow-700">פרקים שנלקחו</div>
-        </div>
-        <div className="bg-blue-100 p-4 rounded-lg text-center">
-          <div className="text-2xl font-bold text-blue-800">{completedCount}</div>
-          <div className="text-blue-700">פרקים שהושלמו</div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold text-indigo-900 mb-4">בחר פרקים</h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">שם</label>
-            <input
-              type="text"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="הכנס שם"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">אימייל</label>
-            <input
-              type="email"
-              value={userEmail}
-              onChange={(e) => setUserEmail(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="הכנס אימייל"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={handleClaimChapters}
-              disabled={selectedChapters.length === 0 || !userName || !userEmail}
-              className="w-full bg-indigo-600 text-white p-2 rounded-md hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <Bell className="w-4 h-4" />
-              קח פרקים ({selectedChapters.length})
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-10 gap-2">
-          {Object.values(campaignData.chapters).map(chapter => (
-            <button
-              key={chapter.id}
-              onClick={() => handleChapterSelect(chapter.id)}
-              className={`
-                p-2 rounded-md text-sm font-medium transition-colors
-                ${chapter.completed ? 'bg-blue-500 text-white cursor-default' :
-                  !chapter.available ? 'bg-yellow-400 text-gray-800 cursor-default' :
-                  selectedChapters.includes(chapter.id) ? 'bg-indigo-600 text-white' :
-                  'bg-green-100 hover:bg-green-200 text-green-800'}
-              `}
-              disabled={!chapter.available}
-              title={
-                chapter.completed ? `הושלם על ידי ${chapter.takenBy}` :
-                !chapter.available ? `נלקח על ידי ${chapter.takenBy}` :
-                'זמין'
+        // --- Create Campaign ---
+        const createDiv = document.createElement('div');
+        createDiv.style.flex = '1';
+        createDiv.style.minWidth = '270px';
+        createDiv.style.background = '#fff';
+        createDiv.style.borderRadius = '10px';
+        createDiv.style.boxShadow = '0 1px 6px #e2e8f0';
+        createDiv.style.padding = '18px';
+        createDiv.innerHTML = `
+          <h2 style="font-size:1.25em; font-weight:bold;">${icons.plus} צור מסע חדש</h2>
+        `;
+        if (!showCreateForm) {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.textContent = 'צור מסע תהילים';
+          btn.onclick = () => { showCreateForm = true; render(); };
+          createDiv.appendChild(btn);
+        } else {
+          createDiv.innerHTML += `
+            <input class="input" type="text" id="campaignName" placeholder="שם המסע (לדוגמה: תהילים לרפואה)" value="${campaignName}">
+            <input class="input" type="text" id="prayerFor" placeholder="למי מתפללים? (לדוגמה: יוסף בן מרים)" value="${prayerFor}">
+            <input class="input" type="text" id="creatorName" placeholder="השם שלך" value="${creatorName}">
+            <input class="input" type="email" id="creatorEmail" placeholder="האימייל שלך (אופציונלי)" value="${creatorEmail}">
+            <div style="display:flex; gap:7px;">
+              <button class="btn" id="createBtn">צור מסע</button>
+              <button class="btn" style="background:#e2e8f0; color:#2d3748;" id="cancelBtn">ביטול</button>
+            </div>
+          `;
+          // Attach events after DOM insert
+          setTimeout(() => {
+            document.getElementById('campaignName').oninput = e => { campaignName = e.target.value; };
+            document.getElementById('prayerFor').oninput = e => { prayerFor = e.target.value; };
+            document.getElementById('creatorName').oninput = e => { creatorName = e.target.value; };
+            document.getElementById('creatorEmail').oninput = e => { creatorEmail = e.target.value; };
+            document.getElementById('createBtn').onclick = () => {
+              if (!campaignName || !prayerFor || !creatorName) {
+                alertMsg('נא למלא את כל השדות');
+                return;
               }
-            >
-              {chapter.id}
-              {chapter.completed && <Check className="w-3 h-3 inline ml-1" />}
-              {!chapter.available && !chapter.completed && <Clock className="w-3 h-3 inline ml-1" />}
-            </button>
-          ))}
-        </div>
-      </div>
+              const id = generateId();
+              const newCampaign = {
+                id,
+                name: campaignName,
+                prayerFor,
+                creatorName,
+                creatorEmail,
+                createdAt: new Date().toLocaleDateString('he-IL'),
+                chapters: {}
+              };
+              for (let i = 1; i <= 150; i++) {
+                newCampaign.chapters[i] = {
+                  id: i,
+                  available: true,
+                  takenBy: '',
+                  email: '',
+                  completed: false,
+                  takenAt: null
+                };
+              }
+              campaigns[id] = newCampaign;
+              currentCampaign = id;
+              showCreateForm = false;
+              resetForm();
+              render();
+            };
+            document.getElementById('cancelBtn').onclick = () => {
+              showCreateForm = false;
+              render();
+            };
+          }, 50);
+        }
+        gridDiv.appendChild(createDiv);
 
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-indigo-900 mb-4">פרקים שנלקחו</h2>
-        
-        {Object.values(campaignData.chapters).filter(ch => !ch.available).length === 0 ? (
-          <p className="text-gray-600 text-center py-4">אין פרקים שנלקחו עדיין</p>
-        ) : (
-          <div className="space-y-3">
-            {Object.values(campaignData.chapters)
-              .filter(ch => !ch.available)
-              .sort((a, b) => a.id - b.id)
-              .map(chapter => (
-                <div key={chapter.id} className={`
-                  p-4 rounded-lg border-2 transition-all
-                  ${chapter.completed ? 'border-blue-200 bg-blue-50' : 'border-yellow-200 bg-yellow-50'}
-                `}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-lg">פרק {chapter.id}</span>
-                      <div className="flex items-center gap-1 text-gray-600">
-                        <User className="w-4 h-4" />
-                        <span>{chapter.takenBy}</span>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        נלקח: {chapter.takenAt}
-                      </div>
-                      {chapter.completed && (
-                        <div className="flex items-center gap-1 text-blue-600">
-                          <Check className="w-4 h-4" />
-                          <span className="text-sm">הושלם</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowChapterText(chapter.id)}
-                        className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 text-sm"
-                      >
-                        הצג טקסט
-                      </button>
-                      {!chapter.completed && (
-                        <button
-                          onClick={() => handleCompleteChapter(chapter.id)}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm"
-                        >
-                          סיימתי
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
+        // --- Existing Campaigns ---
+        const existDiv = document.createElement('div');
+        existDiv.style.flex = '1';
+        existDiv.style.minWidth = '270px';
+        existDiv.style.background = '#fff';
+        existDiv.style.borderRadius = '10px';
+        existDiv.style.boxShadow = '0 1px 6px #e2e8f0';
+        existDiv.style.padding = '18px';
+        existDiv.innerHTML = `<h2 style="font-size:1.15em; font-weight:bold;">מסעות פעילים</h2>`;
+        const keys = Object.keys(campaigns);
+        if (keys.length === 0) {
+          existDiv.innerHTML += `<div style="text-align:center; color:#718096; padding:25px;">אין מסעות פעילים כרגע</div>`;
+        } else {
+          const listDiv = document.createElement('div');
+          listDiv.className = 'campaign-list';
+          keys.forEach(k => {
+            const campaign = campaigns[k];
+            const completed = Object.values(campaign.chapters).filter(ch => ch.completed).length;
+            const taken = Object.values(campaign.chapters).filter(ch => !ch.available && !ch.completed).length;
+            const card = document.createElement('div');
+            card.className = 'campaign-card';
+            card.innerHTML = `
+              <div>
+                <div style="font-weight:bold;">${campaign.name}</div>
+                <div style="color:#5a67d8;">עבור: ${campaign.prayerFor}</div>
+                <div style="color:#718096; font-size:0.9em;">הושלמו: ${completed} | נלקחו: ${taken}</div>
+              </div>
+              <button class="btn" style="background:#ebf4ff; color:#4c51bf;" id="join_${k}">הצטרף</button>
+            `;
+            setTimeout(() => {
+              document.getElementById(`join_${k}`).onclick = () => {
+                currentCampaign = campaign.id;
+                render();
+              };
+            }, 10);
+            listDiv.appendChild(card);
+          });
+          existDiv.appendChild(listDiv);
+        }
+        gridDiv.appendChild(existDiv);
+
+        mainDiv.appendChild(gridDiv);
+
+        // Footer
+        const footer = document.createElement('div');
+        footer.className = 'footer';
+        footer.innerHTML = `${icons.heart} נוצר לזכות הרבים`;
+        mainDiv.appendChild(footer);
+
+        app.appendChild(mainDiv);
+        return;
+      }
+
+      // --- Campaign View ---
+      const campaign = campaigns[currentCampaign];
+      const available = Object.values(campaign.chapters).filter(ch => ch.available).length;
+      const taken = Object.values(campaign.chapters).filter(ch => !ch.available && !ch.completed).length;
+      const completed = Object.values(campaign.chapters).filter(ch => ch.completed).length;
+
+      // Back button, name, copy link
+      const headerDiv = document.createElement('div');
+      headerDiv.style.textAlign = 'center';
+      headerDiv.style.marginBottom = '14px';
+      headerDiv.innerHTML = `
+        <button class="btn" style="background:#ebf4ff; color:#4c51bf; margin-bottom:7px;" id="backBtn">← חזור למסעות</button>
+        <h1 style="font-size:1.35em; font-weight:bold; margin:7px 0 5px 0;">${campaign.name}</h1>
+        <div style="color:#5a67d8; font-size:1.08em; margin-bottom:8px;">תהילים עבור: <span style="font-weight:bold;">${campaign.prayerFor}</span></div>
+        <button class="btn" style="background:#e6fffa; color:#38a169;" id="copyBtn">${icons.copy} העתק קישור</button>
+      `;
+      setTimeout(() => {
+        document.getElementById('backBtn').onclick = () => { currentCampaign = null; render(); };
+        document.getElementById('copyBtn').onclick = () => {
+          const link = `${window.location.origin}${window.location.pathname}?campaign=${currentCampaign}`;
+          navigator.clipboard.writeText(link);
+          alertMsg('הקישור הועתק!');
+        };
+      }, 30);
+      app.appendChild(headerDiv);
+
+      // Stats
+      const statsDiv = document.createElement('div');
+      statsDiv.className = 'stats';
+      statsDiv.innerHTML = `
+        <div class="stat green"><div style="font-size:1.3em;">${available}</div>זמינים</div>
+        <div class="stat yellow"><div style="font-size:1.3em;">${taken}</div>נלקחו</div>
+        <div class="stat blue"><div style="font-size:1.3em;">${completed}</div>הושלמו</div>
+      `;
+      app.appendChild(statsDiv);
+
+      // --- Take Chapters ---
+      const takeDiv = document.createElement('div');
+      takeDiv.style.background = '#fff';
+      takeDiv.style.borderRadius = '10px';
+      takeDiv.style.boxShadow = '0 1px 6px #e2e8f0';
+      takeDiv.style.padding = '18px';
+      takeDiv.style.marginBottom = '22px';
+      takeDiv.innerHTML = `<h2 style="font-size:1.07em; font-weight:bold;">בחר פרקים</h2>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px;">
+          <input class="input" type="text" id="userName" placeholder="השם שלך" value="${userName}">
+          <input class="input" type="email" id="userEmail" placeholder="האימייל שלך" value="${userEmail}">
+          <button class="btn" id="claimBtn" ${selectedChapters.length === 0 || !userName || !userEmail ? 'disabled style="background:#e2e8f0;color:#718096;"' : ''}>${icons.bell} קח פרקים (${selectedChapters.length})</button>
+        </div>
+        <div class="chapter-grid" id="chapGrid"></div>
+      `;
+      setTimeout(() => {
+        document.getElementById('userName').oninput = e => { userName = e.target.value; };
+        document.getElementById('userEmail').oninput = e => { userEmail = e.target.value; };
+        document.getElementById('claimBtn').onclick = () => {
+          if (!userName || !userEmail || selectedChapters.length === 0) {
+            alertMsg('נא למלא שם, אימייל ולבחור פרקים');
+            return;
+          }
+          const timestamp = new Date().toLocaleDateString('he-IL');
+          selectedChapters.forEach(chapterNum => {
+            campaign.chapters[chapterNum].available = false;
+            campaign.chapters[chapterNum].takenBy = userName;
+            campaign.chapters[chapterNum].email = userEmail;
+            campaign.chapters[chapterNum].takenAt = timestamp;
+          });
+          selectedChapters = [];
+          userName = '';
+          userEmail = '';
+          alertMsg('הפרקים נשמרו בהצלחה!');
+          render();
+        };
+        // Chapters grid
+        const chapGrid = document.getElementById('chapGrid');
+        chapGrid.innerHTML = '';
+        Object.values(campaign.chapters).forEach(chapter => {
+          const btn = document.createElement('button');
+          btn.className = 'chapter-btn';
+          btn.textContent = chapter.id;
+          if (chapter.completed) {
+            btn.classList.add('completed');
+            btn.title = `הושלם על ידי ${chapter.takenBy}`;
+            btn.innerHTML += icons.check;
+            btn.disabled = true;
+          } else if (!chapter.available) {
+            btn.classList.add('taken');
+            btn.title = `נלקח על ידי ${chapter.takenBy}`;
+            btn.innerHTML += icons.clock;
+            btn.disabled = true;
+          } else if (selectedChapters.includes(chapter.id)) {
+            btn.classList.add('selected');
+            btn.title = 'נבחר';
+          } else {
+            btn.classList.add('available');
+            btn.title = 'זמין';
+          }
+          btn.onclick = () => {
+            if (!chapter.available) return;
+            if (selectedChapters.includes(chapter.id)) {
+              selectedChapters = selectedChapters.filter(ch => ch !== chapter.id);
+            } else {
+              selectedChapters.push(chapter.id);
             }
-          </div>
-        )}
-      </div>
+            render();
+          };
+          chapGrid.appendChild(btn);
+        });
+      }, 50);
+      app.appendChild(takeDiv);
 
-      {showChapterText && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl max-h-96 overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">פרק {showChapterText}</h3>
-              <button
-                onClick={() => setShowChapterText(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
+      // --- Taken Chapters ---
+      const takenDiv = document.createElement('div');
+      takenDiv.style.background = '#fff';
+      takenDiv.style.borderRadius = '10px';
+      takenDiv.style.boxShadow = '0 1px 6px #e2e8f0';
+      takenDiv.style.padding = '18px';
+      takenDiv.innerHTML = `<h2 style="font-size:1.07em; font-weight:bold;">פרקים שנלקחו</h2>`;
+      const takenChapters = Object.values(campaign.chapters).filter(ch => !ch.available);
+      if (takenChapters.length === 0) {
+        takenDiv.innerHTML += `<div style="text-align:center; color:#718096; padding:16px;">אין פרקים שנלקחו עדיין</div>`;
+      } else {
+        const listDiv = document.createElement('div');
+        listDiv.className = 'taken-list';
+        takenChapters.sort((a,b) => a.id - b.id).forEach(chapter => {
+          const card = document.createElement('div');
+          card.className = 'taken-card';
+          if (chapter.completed) card.classList.add('completed');
+          card.innerHTML = `
+            <div>
+              <span style="font-weight:bold;">פרק ${chapter.id}</span>
+              <span style="color:#718096; margin-right:7px;">${icons.user} ${chapter.takenBy}</span>
+              ${chapter.completed ? `<span style="color:#3182ce;">${icons.check} הושלם</span>` : ''}
             </div>
-            <div className="text-right leading-relaxed whitespace-pre-line font-hebrew">
-              {chapterTexts[showChapterText] || `טקסט של פרק ${showChapterText} יוצג כאן...`}
+            <div>
+              <button class="btn" style="background:#ebf4ff; color:#4c51bf; font-size:0.92em;" id="showText_${chapter.id}">הצג טקסט</button>
+              ${!chapter.completed ? `<button class="btn" style="background:#f0fff4; color:#38a169; font-size:0.92em;" id="finish_${chapter.id}">סיימתי</button>` : ''}
             </div>
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => handleCompleteChapter(showChapterText)}
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                <Check className="w-4 h-4 inline mr-2" />
-                סיימתי את הפרק
-              </button>
-            </div>
-          </div>
+          `;
+          setTimeout(() => {
+            document.getElementById(`showText_${chapter.id}`).onclick = () => {
+              showChapterText = chapter.id;
+              render();
+            };
+            if (!chapter.completed) {
+              document.getElementById(`finish_${chapter.id}`).onclick = () => {
+                campaign.chapters[chapter.id].completed = true;
+                alertMsg(`פרק ${chapter.id} הושלם!`);
+                render();
+              };
+            }
+          }, 20);
+          listDiv.appendChild(card);
+        });
+        takenDiv.appendChild(listDiv);
+      }
+      app.appendChild(takenDiv);
+
+      // Footer
+      const footer = document.createElement('div');
+      footer.className = 'footer';
+      footer.innerHTML = `${icons.heart} נוצר לזכות הרבים • מתפללים עבור ${campaign.prayerFor}`;
+      app.appendChild(footer);
+    }
+
+    // --- Modal for Chapter Text ---
+    function renderModal(app) {
+      const campaign = campaigns[currentCampaign];
+      const chapterNum = showChapterText;
+      const chapter = campaign.chapters[chapterNum];
+      // Use Sefaria text if available
+      let textBlock = '';
+      if (sefariaText && sefariaText.text) {
+        textBlock = `<pre>${Array.isArray(sefariaText.text) ? sefariaText.text.join('\n') : sefariaText.text}</pre>`;
+      } else {
+        textBlock = `<div>טקסט של פרק ${chapterNum} יוצג כאן...</div>`;
+      }
+      const modalBg = document.createElement('div');
+      modalBg.className = 'modal-bg';
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <button class="close" id="modalClose">&times;</button>
+        <h3 style="font-size:1.07em; font-weight:bold; margin-bottom:13px;">פרק ${chapterNum}</h3>
+        <div style="margin-bottom:12px;">${textBlock}</div>
+        <div style="text-align:center;">
+          <button class="btn" style="margin-top:11px;" id="finishModalBtn">${icons.check} סיימתי את הפרק</button>
         </div>
-      )}
+      `;
+      setTimeout(() => {
+        document.getElementById('modalClose').onclick = () => {
+          showChapterText = null;
+          render();
+        };
+        document.getElementById('finishModalBtn').onclick = () => {
+          campaign.chapters[chapterNum].completed = true;
+          showChapterText = null;
+          alertMsg(`פרק ${chapterNum} הושלם!`);
+          render();
+        };
+      }, 25);
 
-      <div className="text-center mt-8 text-gray-600 text-sm">
-        <Heart className="w-4 h-4 inline text-red-500 mr-1" />
-        נוצר לזכות הרבים • מתפללים עבור {campaignData.prayerFor}
-      </div>
-    </div>
-  );
-};
+      modalBg.appendChild(modal);
+      app.appendChild(modalBg);
+    }
 
-export default TehillimTracker;
+    // ---- Initial Render ----
+    render();
+  </script>
+</body>
+</html>
